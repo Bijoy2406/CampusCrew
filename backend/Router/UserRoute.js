@@ -193,8 +193,10 @@ router.put('/profile', verifyToken, async (req, res) => {
 });
 
 
-router.post('/upload-photo', upload.single('photo'), async (req, res) => {
+router.put('/upload-photo/:id', upload.single('photo'), async (req, res) => {
     try {
+        let profilePhoto = '';
+        const id = req.params.id;
         if (!req.file) {
             return res.status(400).json({ success: false, message: 'No file uploaded' });
         }
@@ -204,8 +206,12 @@ router.post('/upload-photo', upload.single('photo'), async (req, res) => {
             folder: 'profile_photos',
             resource_type: 'image'
         });
-
-        res.status(200).json({ success: true, url: result.secure_url });
+        profilePhoto = result.secure_url;
+        const updateUser = await Users.findByIdAndUpdate(id, { profilePic: profilePhoto }, { new: true });
+        if (!updateUser) {
+            return res.status(404).json({ success: false, message: 'User not found' });
+        }
+        res.status(200).json({ success: true, url: profilePhoto });
     } catch (error) {
         console.error('Upload error:', error);
         res.status(500).json({ success: false, message: 'Error uploading photo' });
