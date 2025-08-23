@@ -194,6 +194,30 @@
   border-color: var(--primary-color);
   box-shadow: 0 0 0 3px rgba(var(--primary-color), 0.1);
 }
+.home-footer {
+  padding: 20px;
+  text-align: center;
+  border-top: 1px solid var(--border-light);
+  transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
+}
+
+.footer-links {
+  margin-top: 10px;
+  display: flex;
+  justify-content: center;
+  gap: 15px;
+}
+
+.footer-links a {
+  text-decoration: none;
+  color: var(--text-primary); /* default text color for readability */
+  transition: color 0.3s ease;
+}
+
+.footer-links a:hover {
+  color: var(--primary-color); /* use primary theme color on hover */
+}
+
 
 /* Button themes */
 .theme-button-primary {
