@@ -3,9 +3,16 @@ const router = express.Router()
 
 const Events = require('../models/EventModel')
 const upload = require('../utils/multer')
+const multer = require('multer')
 const cloudinary = require('../utils/cloudinary')
 
-router.post('/events', upload.single('image'), async (req, res) => {
+router.post('/events', (req,res,next)=>{
+    upload.single('image')(req,res,function(err){
+        if(err instanceof multer.MulterError && err.code==='LIMIT_FILE_SIZE') return res.status(413).json({success:false,message:'Image must be 3MB or smaller'});
+        if(err) return res.status(400).json({success:false,message:err.message});
+        next();
+    })
+}, async (req, res) => {
 
     const eventBody = req.body
     try {
@@ -33,7 +40,26 @@ router.get('/events', async (req, res) => {
     }
 })
 
-router.put('/events/:id', upload.single('image'), async (req, res) => {
+// Get single event details
+router.get('/events/:id', async (req, res) => {
+    try {
+        const event = await Events.findById(req.params.id);
+        if (!event) {
+            return res.status(404).json({ success: false, message: 'Event not found' });
+        }
+        res.status(200).json({ success: true, event });
+    } catch (error) {
+        res.status(500).json({ success: false, message: error.message });
+    }
+})
+
+router.put('/events/:id', (req,res,next)=>{
+    upload.single('image')(req,res,function(err){
+        if(err instanceof multer.MulterError && err.code==='LIMIT_FILE_SIZE') return res.status(413).json({success:false,message:'Image must be 3MB or smaller'});
+        if(err) return res.status(400).json({success:false,message:err.message});
+        next();
+    })
+}, async (req, res) => {
     try {
         const eventId = req.params.id;
         const eventBody = req.body;

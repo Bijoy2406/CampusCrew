@@ -7,6 +7,15 @@ const Registration = require('../models/RegistrationModel')
 router.post('/register-event', async (req, res) => {
     try {
         const registrationData = req.body;
+        // Prevent duplicate registrations for same user & event
+        const existing = await Registration.findOne({ userId: registrationData.userId, eventId: registrationData.eventId });
+        if (existing) {
+            return res.status(409).json({ success: false, message: 'Already registered for this event', registration: existing });
+        }
+        // If event has zero fee mark as completed + registered
+        if (registrationData.payment_status === 'completed') {
+            registrationData.is_registered = true;
+        }
         const newRegistration = new Registration(registrationData);
         await newRegistration.save();
         res.status(201).json({ success: true, registration: newRegistration });
