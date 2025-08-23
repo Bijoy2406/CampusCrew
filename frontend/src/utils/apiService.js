@@ -46,6 +46,16 @@ export const apiService = {
   // Update user profile
   updateProfile: (profileData) => api.put('/profile', profileData),
   
+  // Upload profile photo
+  uploadProfilePhoto: (userId, formData) => {
+    return axios.put(`${API_BASE_URL}/upload-photo/${userId}`, formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+        'Authorization': `Bearer ${localStorage.getItem('auth-token')}`,
+      },
+    });
+  },
+  
   // Login
   login: (credentials) => api.post('/login', credentials),
   

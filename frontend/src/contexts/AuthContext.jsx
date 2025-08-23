@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { apiService } from '../utils/apiService';
+import { showSuccessToast, showErrorToast, showInfoToast } from '../utils/toastUtils';
 
 const AuthContext = createContext();
 
@@ -30,6 +31,7 @@ export const AuthProvider = ({ children }) => {
           }
         } catch (error) {
           console.error('Failed to fetch profile on load', error);
+          showErrorToast('Session expired. Please login again.');
           logout();
         }
       }
@@ -39,13 +41,27 @@ export const AuthProvider = ({ children }) => {
     verifyUser();
   }, []);
 
-  const login = (token, refreshToken, userData = null) => {
+  const login = async (token, refreshToken, userData = null) => {
     localStorage.setItem('auth-token', token);
     if (refreshToken) {
         localStorage.setItem('refresh-token', refreshToken);
     }
     setIsAuthenticated(true);
-    setUser(userData);
+    
+    // Fetch complete user profile after login
+    try {
+      const response = await apiService.getProfile();
+      if (response.data.success) {
+        setUser(response.data.user);
+      } else {
+        // Fallback to provided userData if profile fetch fails
+        setUser(userData);
+      }
+    } catch (error) {
+      console.error('Failed to fetch profile after login:', error);
+      // Fallback to provided userData if profile fetch fails
+      setUser(userData);
+    }
   };
 
   const logout = () => {
@@ -53,6 +69,23 @@ export const AuthProvider = ({ children }) => {
     localStorage.removeItem('refresh-token');
     setIsAuthenticated(false);
     setUser(null);
+    showInfoToast('You have been logged out successfully.');
+  };
+
+  const refreshUserData = async () => {
+    const token = localStorage.getItem('auth-token');
+    if (token && isAuthenticated) {
+      try {
+        const response = await apiService.getProfile();
+        if (response.data.success) {
+          setUser(response.data.user);
+          return response.data.user;
+        }
+      } catch (error) {
+        console.error('Failed to refresh user data:', error);
+      }
+    }
+    return null;
   };
 
   const value = {
@@ -61,7 +94,8 @@ export const AuthProvider = ({ children }) => {
     loading,
     login,
     logout,
-    setUser
+    setUser,
+    refreshUserData
   };
 
   return (
