@@ -11,6 +11,7 @@ const frontend_url = process.env.frontend_url
 const UserRouter = require('./Router/UserRoute')
 const EventRouter = require('./Router/EventRoute')
 const RegistrationRouter = require('./Router/RegistrationRoute')
+const RecommendetionRouter = require('./Router/Recommendetion')
 
 
 app.use(express.json())
@@ -49,3 +50,4 @@ app.listen(port, () => {
 app.use('/api', UserRouter)
 app.use('/api', EventRouter)
 app.use('/api', RegistrationRouter)
+app.use('/api', RecommendetionRouter)

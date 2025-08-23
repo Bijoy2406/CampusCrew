@@ -1,4 +1,4 @@
-/* Create Event Page - Dark/Light Mode Compatible */
+/* Create Event Page - Darker Lavender Theme - Dark/Light Mode Compatible */
 
 /* Wrapper for the entire create event page */
 .ce-wrapper {
@@ -43,7 +43,7 @@
   margin-bottom: 1.5rem;
   color: var(--text-primary);
   font-weight: 700;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #9c7bb5 30%, #8b63a9 50%, #a150b8 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
@@ -51,12 +51,12 @@
 
 /* Fallback for gradient text in unsupported browsers */
 .ce-form-title {
-  color: #667eea;
+  color: #9c7bb5;
 }
 
 @supports (background-clip: text) or (-webkit-background-clip: text) {
   .ce-form-title {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: linear-gradient(135deg, #9c7bb5 30%, #8b63a9 50%, #a150b8 100%);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
@@ -94,14 +94,14 @@
 
 .ce-input:hover,
 .ce-textarea:hover {
-  border-color: #667eea;
-  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+  border-color: #9c7bb5;
+  box-shadow: 0 0 0 3px rgba(156, 123, 181, 0.1);
 }
 
 .ce-input:focus,
 .ce-textarea:focus {
-  border-color: #667eea;
-  box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.2);
+  border-color: #9c7bb5;
+  box-shadow: 0 0 0 4px rgba(156, 123, 181, 0.2);
   background-color: var(--bg-card);
 }
 
@@ -139,7 +139,7 @@
 
 /* Buttons */
 .ce-btn {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #9c7bb5 30%, #8b63a9 50%, #a150b8 100%);
   color: white;
   border: none;
   padding: 0.75rem 1.5rem;
@@ -154,8 +154,8 @@
 
 .ce-btn:hover {
   transform: translateY(-2px);
-  box-shadow: 0 8px 25px rgba(102, 126, 234, 0.3);
-  background: linear-gradient(135deg, #5a67d8 0%, #6b46c1 100%);
+  box-shadow: 0 8px 25px rgba(156, 123, 181, 0.3);
+  background: linear-gradient(135deg, #8b63a9 30%, #7a4fa1 50%, #a150b8 100%);
 }
 
 .ce-btn:active {
@@ -163,17 +163,17 @@
 }
 
 .ce-btn:focus {
-  outline: 2px solid #667eea;
+  outline: 2px solid #9c7bb5;
   outline-offset: 2px;
 }
 
 /* Secondary button variant */
 .ce-btn-secondary {
-  background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+  background: linear-gradient(135deg, #9c7bb5 30%, #8b63a9 50%, #a150b8 100%);
 }
 
 .ce-btn-secondary:hover {
-  background: linear-gradient(135deg, #3182ce 0%, #0891b2 100%);
+  background: linear-gradient(135deg, #8b63a9 30%, #7a4fa1 50%, #a150b8 100%);
 }
 
 .ce-full-width {
@@ -194,7 +194,7 @@
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #9c7bb5 30%, #8b63a9 50%, #a150b8 100%);
   color: white;
   padding: 0.5rem 1rem;
   border-radius: 20px;
@@ -263,12 +263,12 @@
 /* Dark mode input focus states */
 [data-theme="dark"] .ce-input:focus,
 [data-theme="dark"] .ce-textarea:focus {
-  box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.3);
+  box-shadow: 0 0 0 4px rgba(156, 123, 181, 0.3);
 }
 
 /* Dark mode button shadows */
 [data-theme="dark"] .ce-btn:hover {
-  box-shadow: 0 8px 25px rgba(102, 126, 234, 0.4);
+  box-shadow: 0 8px 25px rgba(156, 123, 181, 0.4);
 }
 
 /* Number input styling */
@@ -396,7 +396,7 @@
 }
 
 .ce-input[type="file"]::-webkit-file-upload-button {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #9c7bb5 30%, #8b63a9 50%, #a150b8 100%);
   color: white;
   border: none;
   border-radius: 8px;
@@ -409,7 +409,7 @@
 
 .ce-input[type="file"]::-webkit-file-upload-button:hover {
   transform: translateY(-1px);
-  box-shadow: 0 4px 8px rgba(102, 126, 234, 0.3);
+  box-shadow: 0 4px 8px rgba(156, 123, 181, 0.3);
 }
 
 /* Help text */
@@ -440,14 +440,14 @@
 .ce-input:focus,
 .ce-textarea:focus,
 .ce-btn:focus {
-  outline: 2px solid #667eea;
+  outline: 2px solid #9c7bb5;
   outline-offset: 2px;
 }
 
 /* Enhanced visual feedback */
 .ce-form-field:hover .ce-label,
 .ce-form-group:hover .ce-label {
-  color: #667eea;
+  color: #9c7bb5;
   transition: color 0.3s ease;
 }
 
@@ -478,5 +478,5 @@
 }
 
 [data-theme="dark"] .ce-textarea::-webkit-scrollbar-thumb:hover {
-  background: #667eea;
+  background: #9c7bb5;
 }
