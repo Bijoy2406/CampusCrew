@@ -61,6 +61,29 @@ export const apiService = {
   
   // Register
   register: (userData) => api.post('/signup', userData),
+  
+  // Event APIs
+  createEvent: (eventData) => {
+    return axios.post(`${API_BASE_URL}/events`, eventData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+        'Authorization': `Bearer ${localStorage.getItem('auth-token')}`,
+      },
+    });
+  },
+  
+  getEvents: () => api.get('/events'),
+  
+  updateEvent: (eventId, eventData) => {
+    return axios.put(`${API_BASE_URL}/events/${eventId}`, eventData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+        'Authorization': `Bearer ${localStorage.getItem('auth-token')}`,
+      },
+    });
+  },
+  
+  deleteEvent: (eventId) => api.delete(`/events/${eventId}`),
 };
 
 export default api;

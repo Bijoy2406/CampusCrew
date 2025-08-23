@@ -3,81 +3,68 @@ import Header from "../Components/Header";
 import Footer from "../Components/Footer";
 import { toast, ToastContainer } from 'react-toastify';
 import { showSuccessToast, showErrorToast, showWarningToast, showInfoToast } from '../utils/toastUtils';
+import { apiService } from '../utils/apiService';
+import { useAuth } from '../contexts/AuthContext';
 import 'react-toastify/dist/ReactToastify.css';
 import "../CSS/createEvent.css"; // Only your custom CSS
 
 function CreateEvent() {
+  const { user } = useAuth();
   const [event, setEvent] = useState({
-    name: "",
+    title: "",
     description: "",
     date: "",
-    time: "",
-    durationHours: 1,
-    durationMinutes: 0,
     location: "",
-    guestEmail: "",
-    guests: [],
+    organizer: "",
+    prize_money: 0,
+    event_type: "offline",
+    registration_deadline: "",
+    registration_fee: 0,
+    event_image: null,
   });
 
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleChange = (e) => {
-    const { name, value } = e.target;
-    setEvent({ ...event, [name]: value });
+    const { name, value, type, files } = e.target;
     
-    // Clear any previous error state for this field (optional enhancement)
-    if (name === 'name' && value.trim()) {
-      // Could add field-specific validation feedback here
+    if (type === 'file') {
+      const file = files[0];
+      if (file) {
+        // Check file size (max 3MB)
+        if (file.size > 3 * 1024 * 1024) {
+          showErrorToast("Image size should be less than 3MB");
+          return;
+        }
+        // Check file type
+        if (!file.type.startsWith('image/')) {
+          showErrorToast("Please select a valid image file");
+          return;
+        }
+        setEvent({ ...event, [name]: file });
+      }
+    } else {
+      setEvent({ ...event, [name]: value });
     }
-  };
-
-  const addGuest = () => {
-    if (!event.guestEmail.trim()) {
-      showWarningToast("Please enter an email address");
-      return;
-    }
-    
-    // Basic email validation
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(event.guestEmail.trim())) {
-      showErrorToast("Please enter a valid email address");
-      return;
-    }
-    
-    // Check if email already exists
-    if (event.guests.includes(event.guestEmail.trim())) {
-      showWarningToast("This email is already in the guest list");
-      return;
-    }
-    
-    setEvent({
-      ...event,
-      guests: [...event.guests, event.guestEmail.trim()],
-      guestEmail: "",
-    });
-    
-    showSuccessToast(`Guest ${event.guestEmail.trim()} added to the list`);
-  };
-
-  const handleGuestEmailKeyPress = (e) => {
-    if (e.key === 'Enter') {
-      e.preventDefault();
-      addGuest();
-    }
-  };
-
-  const removeGuest = (index, guestEmail) => {
-    const newGuests = event.guests.filter((_, i) => i !== index);
-    setEvent({ ...event, guests: newGuests });
-    showInfoToast(`Guest ${guestEmail} removed from the list`);
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     
+    // Check if user is logged in
+    if (!user || !user._id) {
+      showErrorToast("You must be logged in to create an event");
+      return;
+    }
+    
     // Basic validation
-    if (!event.name.trim()) {
-      showErrorToast("Please enter an event name");
+    if (!event.title.trim()) {
+      showErrorToast("Please enter an event title");
+      return;
+    }
+    
+    if (!event.description.trim()) {
+      showErrorToast("Please enter an event description");
       return;
     }
     
@@ -86,17 +73,43 @@ function CreateEvent() {
       return;
     }
     
-    if (!event.time) {
-      showErrorToast("Please select a time for the event");
+    if (!event.location.trim()) {
+      showErrorToast("Please enter a location for the event");
+      return;
+    }
+    
+    if (!event.organizer.trim()) {
+      showErrorToast("Please enter the organizer name");
+      return;
+    }
+    
+    if (!event.registration_deadline) {
+      showErrorToast("Please select a registration deadline");
       return;
     }
     
     // Check if date is in the future
-    const selectedDate = new Date(`${event.date}T${event.time}`);
+    const selectedDate = new Date(event.date);
     const now = new Date();
     
     if (selectedDate <= now) {
-      showErrorToast("Event date and time must be in the future");
+      showErrorToast("Event date must be in the future");
+      return;
+    }
+    
+    // Check if registration deadline is before event date
+    const regDeadline = new Date(event.registration_deadline);
+    
+    // Additional check: registration deadline should also be in the future
+    if (regDeadline <= now) {
+      showErrorToast("Registration deadline must be in the future");
+      return;
+    }
+    
+    if (regDeadline >= selectedDate) {
+      const eventDateStr = selectedDate.toLocaleDateString();
+      const regDateStr = regDeadline.toLocaleDateString();
+      showErrorToast(`Registration deadline (${regDateStr}) must be before event date (${eventDateStr})`);
       return;
     }
     
@@ -106,45 +119,57 @@ function CreateEvent() {
       // Show loading toast
       showInfoToast("Creating event...");
       
-      // Simulate API call (replace with actual API call later)
-      const duration = `${event.durationHours}h ${event.durationMinutes}m`;
-      const eventData = {
-        ...event,
-        duration,
-        createdAt: new Date().toISOString()
-      };
+      // Create FormData for multipart/form-data
+      const formData = new FormData();
+      formData.append('title', event.title);
+      formData.append('description', event.description);
+      formData.append('date', event.date);
+      formData.append('location', event.location);
+      formData.append('organizer', event.organizer);
+      formData.append('prize_money', event.prize_money);
+      formData.append('event_type', event.event_type);
+      formData.append('registration_deadline', event.registration_deadline);
+      formData.append('registration_fee', event.registration_fee);
+      formData.append('createdBy', user._id); // Add the logged-in user's ID
       
-      // Simulate API delay
-      await new Promise(resolve => setTimeout(resolve, 1500));
+      if (event.event_image) {
+        formData.append('image', event.event_image);
+      }
       
-      console.log("Event created:", eventData);
+      // Call API to create event
+      const response = await apiService.createEvent(formData);
       
-      // Show success toast
-      showSuccessToast(`Event "${event.name}" has been created successfully!`);
-      
-      // Reset form
-      setEvent({
-        name: "",
-        description: "",
-        date: "",
-        time: "",
-        durationHours: 1,
-        durationMinutes: 0,
-        location: "",
-        guestEmail: "",
-        guests: [],
-      });
-      
-      // Show additional info if guests were added
-      if (event.guests.length > 0) {
-        setTimeout(() => {
-          showInfoToast(`Invitations will be sent to ${event.guests.length} guest(s)`);
-        }, 1000);
+      if (response.data.success) {
+        // Show success toast
+        showSuccessToast(`Event "${event.title}" has been created successfully!`);
+        
+        // Reset form
+        setEvent({
+          title: "",
+          description: "",
+          date: "",
+          location: "",
+          organizer: "",
+          prize_money: 0,
+          event_type: "offline",
+          registration_deadline: "",
+          registration_fee: 0,
+          event_image: null,
+        });
+        
+        // Clear file input
+        const fileInput = document.querySelector('input[type="file"]');
+        if (fileInput) fileInput.value = '';
+        
+        showInfoToast("Event is now live and ready for registrations!");
+      } else {
+        showErrorToast(response.data.message || "Failed to create event");
       }
       
     } catch (error) {
       console.error("Error creating event:", error);
-      showErrorToast("Failed to create event. Please try again.");
+      const errorMessage = error.response?.data?.message || "Failed to create event. Please try again.";
+      showErrorToast(errorMessage);
     } finally {
       setIsSubmitting(false);
     }
@@ -153,18 +178,28 @@ function CreateEvent() {
   return (
     <div className="ce-wrapper" style={{ fontFamily: "Silevena" }}>
       <Header />
-      <div className="ce-form-container">
+      {!user ? (
+        <div className="ce-form-container">
+          <div className="ce-form">
+            <h2 className="ce-form-title">Authentication Required</h2>
+            <p style={{ textAlign: 'center', color: 'var(--text-secondary)' }}>
+              Please log in to create an event.
+            </p>
+          </div>
+        </div>
+      ) : (
+        <div className="ce-form-container">
         <form className="ce-form" onSubmit={handleSubmit}>
           <h2 className="ce-form-title">Create Event</h2>
 
-          {/* Event Name */}
+          {/* Event Title */}
           <div className="ce-form-group">
-            <label className="ce-label">Event Name</label>
+            <label className="ce-label">Event Title</label>
             <input
               type="text"
-              name="name"
-              placeholder="Enter event name"
-              value={event.name}
+              name="title"
+              placeholder="Enter event title"
+              value={event.title}
               onChange={handleChange}
               className="ce-input"
               required
@@ -176,119 +211,128 @@ function CreateEvent() {
             <label className="ce-label">Description</label>
             <textarea
               name="description"
-              placeholder="Add description"
+              placeholder="Add event description"
               value={event.description}
               onChange={handleChange}
               className="ce-textarea"
+              required
             />
           </div>
 
-          {/* Date and Time */}
+          {/* Event Image */}
+          <div className="ce-form-group">
+            <label className="ce-label">Event Image</label>
+            <input
+              type="file"
+              name="event_image"
+              accept="image/*"
+              onChange={handleChange}
+              className="ce-input"
+            />
+            <small className="ce-help-text">Max size: 3MB. Supported formats: JPG, PNG, GIF</small>
+          </div>
+
+          {/* Date and Event Type */}
           <div className="ce-form-row">
             <div className="ce-form-group">
-              <label className="ce-label">Date</label>
+              <label className="ce-label">Event Date</label>
               <input
-                type="date"
+                type="datetime-local"
                 name="date"
                 value={event.date}
                 onChange={handleChange}
                 className="ce-input"
                 required
               />
+              <small className="ce-help-text">When will your event take place?</small>
             </div>
             <div className="ce-form-group">
-              <label className="ce-label">Time</label>
-              <input
-                type="time"
-                name="time"
-                value={event.time}
+              <label className="ce-label">Event Type</label>
+              <select
+                name="event_type"
+                value={event.event_type}
                 onChange={handleChange}
                 className="ce-input"
                 required
-              />
-            </div>
-          </div>
-
-          {/* Duration */}
-          <div className="ce-form-row">
-            <div className="ce-form-group">
-              <label className="ce-label">Duration (Hours)</label>
-              <input
-                type="number"
-                name="durationHours"
-                min="0"
-                max="23"
-                value={event.durationHours}
-                onChange={handleChange}
-                className="ce-input"
-                required
-              />
-            </div>
-            <div className="ce-form-group">
-              <label className="ce-label">Duration (Minutes)</label>
-              <input
-                type="number"
-                name="durationMinutes"
-                min="0"
-                max="59"
-                value={event.durationMinutes}
-                onChange={handleChange}
-                className="ce-input"
-                required
-              />
+              >
+                <option value="offline">Offline</option>
+                <option value="online">Online</option>
+                <option value="hybrid">Hybrid</option>
+              </select>
             </div>
           </div>
 
           {/* Location */}
           <div className="ce-form-group">
             <label className="ce-label">Location</label>
-            <div className="ce-input-inline">
+            <input
+              type="text"
+              name="location"
+              placeholder="Enter event location"
+              value={event.location}
+              onChange={handleChange}
+              className="ce-input"
+              required
+            />
+          </div>
+
+          {/* Organizer */}
+          <div className="ce-form-group">
+            <label className="ce-label">Organizer</label>
+            <input
+              type="text"
+              name="organizer"
+              placeholder="Enter organizer name or organization"
+              value={event.organizer}
+              onChange={handleChange}
+              className="ce-input"
+              required
+            />
+            <small className="ce-help-text">Name of the person or organization organizing this event</small>
+          </div>
+
+          {/* Registration Details */}
+          <div className="ce-form-row">
+            <div className="ce-form-group">
+              <label className="ce-label">Registration Deadline</label>
               <input
-                type="text"
-                name="location"
-                placeholder="Choose Location"
-                value={event.location}
+                type="datetime-local"
+                name="registration_deadline"
+                value={event.registration_deadline}
                 onChange={handleChange}
                 className="ce-input"
+                required
               />
-              <button type="button" className="ce-btn">
-                Set meeting room
-              </button>
+              <small className="ce-help-text">Set the last date/time for registration (must be before event date)</small>
+            </div>
+            <div className="ce-form-group">
+              <label className="ce-label">Registration Fee (৳)</label>
+              <input
+                type="number"
+                name="registration_fee"
+                min="0"
+                step="0.01"
+                value={event.registration_fee}
+                onChange={handleChange}
+                className="ce-input"
+                required
+              />
             </div>
           </div>
 
-          {/* Guests */}
+          {/* Prize Money */}
           <div className="ce-form-group">
-            <label className="ce-label">Add Guests</label>
-            <div className="ce-input-inline">
-              <input
-                type="email"
-                name="guestEmail"
-                placeholder="contact@example.com"
-                value={event.guestEmail}
-                onChange={handleChange}
-                onKeyPress={handleGuestEmailKeyPress}
-                className="ce-input"
-              />
-              <button type="button" className="ce-btn" onClick={addGuest}>
-                Add
-              </button>
-            </div>
-
-            <div className="ce-guest-list">
-              {event.guests.map((g, index) => (
-                <div key={index} className="ce-guest-item">
-                  {g[0].toUpperCase()} - {g}
-                  <button
-                    type="button"
-                    className="ce-remove-btn"
-                    onClick={() => removeGuest(index, g)}
-                  >
-                    ✕
-                  </button>
-                </div>
-              ))}
-            </div>
+            <label className="ce-label">Prize Money (৳)</label>
+            <input
+              type="number"
+              name="prize_money"
+              min="0"
+              step="0.01"
+              value={event.prize_money}
+              onChange={handleChange}
+              className="ce-input"
+              required
+            />
           </div>
 
           <button 
@@ -306,7 +350,8 @@ function CreateEvent() {
             )}
           </button>
         </form>
-      </div>
+        </div>
+      )}
       <Footer />
       
       {/* Toast Container */}
