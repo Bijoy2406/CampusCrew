@@ -1,0 +1,74 @@
+/* Event form */
+.event-form {
+  max-width: 700px;
+  background-color: #e0f7ff; /* Sky blue */
+}
+
+/* Buttons */
+.btn-sky {
+  background-color: #00bfff;
+  color: white;
+  border: none;
+}
+
+.btn-sky:hover {
+  background-color: #009acd;
+}
+
+/* Input hover effect */
+.form-hover:hover,
+.form-hover:focus {
+  border-color: #00bfff;
+  box-shadow: 0 0 5px #00bfff;
+  transition: all 0.2s;
+}
+
+/* Input group icons */
+.input-group-text.bg-sky {
+  background-color: #00bfff; /* Sky blue */
+  border: none;
+  color: #003f5c; /* dark navy for readability */
+  font-size: 1.2em;
+}
+
+.input-group-text.bg-sky i {
+  color: #003f5c; /* dark navy */
+  font-size: 1.2em;
+}
+
+/* Rounded badges for guests */
+.badge {
+  border-radius: 12px;
+  padding: 0.5em 0.7em;
+  font-size: 0.9em;
+}
+
+/* Labels style */
+.form-label {
+  font-size: 1.1em;
+  color: #007bb5;
+}
+
+/* Space between rows */
+.row > .col-md-4 {
+  display: flex;
+  flex-direction: column;
+}
+
+/* Adjust height for inputs */
+.form-control {
+  height: 45px;
+}
+
+/* Date and Time text color */
+input[type="date"],
+input[type="time"] {
+  color: #000; /* text color */
+}
+
+/* Force placeholder text to black */
+input[type="date"]::placeholder,
+input[type="time"]::placeholder {
+  color: #000; /* placeholder color */
+  opacity: 1;
+}
