@@ -53,6 +53,7 @@ router.put('/events/:id', upload.single('image'), async (req, res) => {
         oldEvent.description = eventBody.description || oldEvent.description;
         oldEvent.date = eventBody.date || oldEvent.date;
         oldEvent.location = eventBody.location || oldEvent.location;
+        oldEvent.organizer = eventBody.organizer || oldEvent.organizer;
         oldEvent.registration_deadline = eventBody.registration_deadline || oldEvent.registration_deadline;
         oldEvent.registration_fee = eventBody.registration_fee || oldEvent.registration_fee;
         if (eventBody.event_image) oldEvent.event_image = eventBody.event_image;
