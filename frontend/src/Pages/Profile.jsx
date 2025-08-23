@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { FaUser, FaEnvelope, FaMapMarkerAlt, FaCalendarAlt, FaEdit, FaSave, FaTimes } from 'react-icons/fa';
+import { FaUser, FaEnvelope, FaMapMarkerAlt, FaCalendarAlt, FaEdit, FaSave, FaTimes, FaCamera, FaUpload } from 'react-icons/fa';
 import { useAuth } from '../contexts/AuthContext';
 import { apiService } from '../utils/apiService';
 import { toast, ToastContainer } from 'react-toastify';
@@ -8,15 +8,19 @@ import 'react-toastify/dist/ReactToastify.css';
 import '../CSS/profile.css';
 
 const Profile = () => {
-  const { isAuthenticated, logout } = useAuth();
+  const { isAuthenticated, logout, refreshUserData } = useAuth();
   const navigate = useNavigate();
   const [isEditing, setIsEditing] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [uploadingImage, setUploadingImage] = useState(false);
+  const fileInputRef = useRef(null);
   const [profileData, setProfileData] = useState({
+    _id: '',
     username: '',
     email: '',
     location: '',
     dob: '',
+    profilePic: '',
     targetScore: 7.0,
     isAdmin: false,
     createdAt: ''
@@ -45,10 +49,12 @@ const Profile = () => {
         const userData = response.data.user;
         console.log('User data received:', userData);
         setProfileData({
+          _id: userData._id || '',
           username: userData.username || '',
           email: userData.email || '',
           location: userData.location || '',
           dob: userData.dob ? new Date(userData.dob).toISOString().split('T')[0] : '',
+          profilePic: userData.profilePic || '',
           targetScore: userData.targetScore || 7.0,
           isAdmin: userData.isAdmin || false,
           createdAt: userData.createdAt || ''
@@ -87,10 +93,12 @@ const Profile = () => {
         const updatedUser = response.data.user;
         console.log('Updated user data:', updatedUser);
         setProfileData({
+          _id: updatedUser._id || profileData._id,
           username: updatedUser.username || '',
           email: updatedUser.email || '',
           location: updatedUser.location || '',
           dob: updatedUser.dob ? new Date(updatedUser.dob).toISOString().split('T')[0] : '',
+          profilePic: updatedUser.profilePic || profileData.profilePic,
           targetScore: updatedUser.targetScore || 7.0,
           isAdmin: updatedUser.isAdmin || false,
           createdAt: updatedUser.createdAt || ''
@@ -118,6 +126,71 @@ const Profile = () => {
       ...editData,
       [e.target.name]: e.target.value
     });
+  };
+
+  // Image upload functions
+  const handleImageClick = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleImageChange = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    // Check file size (3MB limit)
+    const maxSize = 3 * 1024 * 1024; // 3MB in bytes
+    if (file.size > maxSize) {
+      toast.error(`File size is ${(file.size / (1024 * 1024)).toFixed(2)}MB. Please select a file smaller than 3MB.`);
+      e.target.value = ''; // Clear the input
+      return;
+    }
+
+    // Check file type
+    const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
+    if (!allowedTypes.includes(file.type)) {
+      toast.error('Please select a valid image file (JPEG, PNG, GIF, or WebP)');
+      e.target.value = ''; // Clear the input
+      return;
+    }
+
+    try {
+      setUploadingImage(true);
+      const formData = new FormData();
+      formData.append('photo', file);
+
+      console.log('Uploading image for user ID:', profileData._id);
+      const response = await apiService.uploadProfilePhoto(profileData._id, formData);
+      
+      if (response.data.success) {
+        // Update profile data with new image URL
+        setProfileData({
+          ...profileData,
+          profilePic: response.data.url
+        });
+        // Also refresh user data in AuthContext to update navbar
+        await refreshUserData();
+        toast.success('Profile photo updated successfully!');
+      } else {
+        toast.error(response.data.message || 'Failed to upload image');
+      }
+    } catch (error) {
+      console.error('Image upload error:', error);
+      if (error.response?.data?.message) {
+        toast.error(error.response.data.message);
+      } else if (error.response?.status === 413) {
+        toast.error('File is too large. Please select a smaller image.');
+      } else {
+        toast.error('Failed to upload image. Please try again.');
+      }
+    } finally {
+      setUploadingImage(false);
+      e.target.value = ''; // Clear the input for future uploads
+    }
+  };
+
+  const getInitials = (username) => {
+    if (!username) return 'U';
+    return username.split(' ').map(name => name[0]).join('').toUpperCase().slice(0, 2);
   };
 
   if (!isAuthenticated || loading) {
@@ -148,9 +221,49 @@ const Profile = () => {
       <div className="profile-content">
         {/* Profile Card */}
         <div className="profile-card">
-          <div className="profile-avatar">
-            <FaUser size={60} />
+          <div className="profile-avatar" onClick={!isEditing ? handleImageClick : undefined} style={{ cursor: !isEditing ? 'pointer' : 'default', position: 'relative' }}>
+            {profileData.profilePic ? (
+              <img 
+                src={profileData.profilePic} 
+                alt="Profile" 
+                style={{ 
+                  width: '100%', 
+                  height: '100%', 
+                  objectFit: 'cover', 
+                  borderRadius: '50%' 
+                }} 
+                onError={(e) => {
+                  e.target.style.display = 'none';
+                  e.target.nextSibling.style.display = 'flex';
+                }}
+              />
+            ) : null}
+            {!profileData.profilePic && (
+              <span style={{ fontSize: '60px', fontWeight: 'bold' }}>
+                {getInitials(profileData.username)}
+              </span>
+            )}
+            {!isEditing && (
+              <div className="upload-overlay">
+                <FaCamera size={20} />
+                <span style={{ fontSize: '12px', marginTop: '5px' }}>Change Photo</span>
+              </div>
+            )}
+            {uploadingImage && (
+              <div className="upload-spinner">
+                <div className="spinner"></div>
+                <span style={{ fontSize: '12px', marginTop: '10px', color: 'white' }}>Uploading...</span>
+              </div>
+            )}
           </div>
+          
+          <input
+            type="file"
+            ref={fileInputRef}
+            onChange={handleImageChange}
+            accept="image/jpeg,image/jpg,image/png,image/gif,image/webp"
+            style={{ display: 'none' }}
+          />
           
           <div className="profile-info">
             {!isEditing ? (
@@ -174,6 +287,17 @@ const Profile = () => {
               </>
             ) : (
               <div className="edit-form">
+                <div className="upload-photo-section">
+                  <button
+                    type="button"
+                    onClick={handleImageClick}
+                    className="upload-photo-btn"
+                    disabled={uploadingImage}
+                  >
+                    <FaUpload /> {uploadingImage ? 'Uploading...' : 'Change Photo'}
+                  </button>
+                  <small>Accepted formats: JPEG, PNG, GIF, WebP (Max: 3MB)</small>
+                </div>
                 <input
                   type="text"
                   name="username"

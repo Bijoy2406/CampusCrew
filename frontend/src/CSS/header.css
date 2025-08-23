@@ -1,0 +1,358 @@
+/* Additional Header Animations and Effects */
+
+/* Smooth scrolling effect */
+html {
+  scroll-behavior: smooth;
+}
+
+/* Header scroll effect */
+.home-header.scrolled {
+  background: linear-gradient(135deg, rgba(102, 126, 234, 0.95) 0%, rgba(118, 75, 162, 0.95) 100%);
+  backdrop-filter: blur(20px);
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
+}
+
+/* Logo animation keyframes */
+@keyframes logoGlow {
+  0%, 100% {
+    filter: brightness(1) drop-shadow(0 0 5px rgba(255, 255, 255, 0.3));
+  }
+  50% {
+    filter: brightness(1.2) drop-shadow(0 0 15px rgba(255, 255, 255, 0.6));
+  }
+}
+
+.logo img {
+  animation: logoGlow 3s ease-in-out infinite;
+}
+
+/* Navigation link active state */
+.nav-link.active {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.2), rgba(255, 255, 255, 0.1));
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  color: #fff;
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.2);
+}
+
+/* Ripple effect for buttons - Updated for new button style */
+.nav-button {
+  position: relative;
+  overflow: hidden;
+}
+
+/* Profile Dropdown Styles */
+.profile-dropdown {
+  position: relative;
+  display: inline-block;
+}
+
+.profile-button {
+  width: 45px;
+  height: 45px;
+  border-radius: 50%;
+  border: 2px solid var(--border-light);
+  background: transparent;
+  cursor: pointer;
+  overflow: hidden;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  backdrop-filter: blur(10px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+}
+
+.profile-button:hover {
+  border-color: var(--border-strong);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px var(--shadow-medium);
+}
+
+.profile-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 50%;
+}
+
+.profile-initials {
+  color: var(--header-text);
+  font-weight: 700;
+  font-size: 16px;
+  text-transform: uppercase;
+}
+
+.dropdown-menu {
+  position: absolute;
+  top: 120%;
+  right: 0;
+  background: var(--gradient-overlay);
+  backdrop-filter: blur(20px);
+  border-radius: 12px;
+  box-shadow: 0 10px 40px var(--shadow-medium);
+  min-width: 180px;
+  z-index: 1000;
+  overflow: hidden;
+  border: 1px solid var(--border-light);
+  animation: dropdownSlide 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+@keyframes dropdownSlide {
+  0% {
+    opacity: 0;
+    transform: translateY(-10px) scale(0.95);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.dropdown-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 18px;
+  text-decoration: none;
+  color: var(--text-primary);
+  transition: all 0.2s ease;
+  border: none;
+  background: transparent;
+  width: 100%;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.dropdown-item:hover {
+  background: var(--primary-color);
+  color: var(--text-inverse);
+  transform: translateX(5px);
+}
+
+.dropdown-item:last-child {
+  border-top: 1px solid var(--border-light);
+}
+
+/* Special styling for logout button - using previous animated design */
+.dropdown-logout {
+  height: 45px;
+  min-width: 140px;
+  padding: 0 18px;
+  position: relative;
+  background-color: transparent;
+  cursor: pointer;
+  border: 2px solid var(--accent-color);
+  overflow: hidden;
+  border-radius: 30px;
+  color: var(--accent-color);
+  transition: all 0.5s ease-in-out;
+  font-weight: 800;
+  letter-spacing: 2px;
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 8px;
+  width: calc(100% - 16px);
+}
+
+.dropdown-logout .btn-txt {
+  z-index: 1;
+  font-weight: 800;
+  letter-spacing: 2px;
+  position: relative;
+}
+
+.dropdown-logout::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0;
+  transition: all 0.5s ease-in-out;
+  background: var(--gradient-accent);
+  border-radius: 30px;
+  visibility: hidden;
+  height: 10px;
+  width: 10px;
+  z-index: -1;
+}
+
+.dropdown-logout:hover {
+  box-shadow: 1px 1px 60px rgba(255, 107, 107, 0.4);
+  color: var(--text-inverse);
+  border: 2px solid transparent;
+  transform: translateX(0) translateY(0);
+  background: transparent;
+}
+
+.dropdown-logout:hover::after {
+  visibility: visible;
+  transform: scale(100) translateX(2px);
+}
+
+.dropdown-icon {
+  font-size: 16px;
+  width: 20px;
+  text-align: center;
+}
+
+.dropdown-item .btn-txt {
+  font-weight: 600;
+  letter-spacing: 0.5px;
+}
+
+/* Close dropdown when clicking outside */
+.profile-dropdown.active .dropdown-menu {
+  display: block;
+}
+
+/* Mobile responsiveness for dropdown */
+@media (max-width: 768px) {
+  .dropdown-menu {
+    right: -10px;
+    min-width: 160px;
+  }
+  
+  .dropdown-item {
+    padding: 12px 16px;
+    font-size: 13px;
+  }
+}
+
+/* Enhanced button glow effect */
+.nav-button:hover {
+  filter: brightness(1.1);
+}
+
+.nav-button.primary:hover {
+  filter: brightness(1.2) saturate(1.1);
+}
+
+/* Button focus enhancement */
+.nav-button:focus {
+  outline: 2px solid rgba(255, 255, 255, 0.8);
+  outline-offset: 3px;
+}
+
+/* Gradient text effect for brand name */
+.brand-text {
+  background: linear-gradient(135deg, #fff, #f0f0f0);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Floating animation for navigation items */
+@keyframes float {
+  0%, 100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-3px);
+  }
+}
+
+.nav-link:nth-child(odd) {
+  animation: float 3s ease-in-out infinite;
+  animation-delay: 0s;
+}
+
+.nav-link:nth-child(even) {
+  animation: float 3s ease-in-out infinite;
+  animation-delay: 1.5s;
+}
+
+/* Custom scrollbar for the page */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f1f1f1;
+}
+
+::-webkit-scrollbar-thumb {
+  background: linear-gradient(135deg, #667eea, #764ba2);
+  border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(135deg, #764ba2, #667eea);
+}
+
+/* Focus states for accessibility */
+.nav-link:focus,
+.nav-button:focus {
+  outline: 2px solid rgba(255, 255, 255, 0.8);
+  outline-offset: 2px;
+}
+
+/* Notification badge for authenticated users */
+.nav-link.has-notification::after {
+  content: '';
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  width: 8px;
+  height: 8px;
+  background: #ff4757;
+  border-radius: 50%;
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0% {
+    transform: scale(0.95);
+    box-shadow: 0 0 0 0 rgba(255, 71, 87, 0.7);
+  }
+  
+  70% {
+    transform: scale(1);
+    box-shadow: 0 0 0 10px rgba(255, 71, 87, 0);
+  }
+  
+  100% {
+    transform: scale(0.95);
+    box-shadow: 0 0 0 0 rgba(255, 71, 87, 0);
+  }
+}
+
+/* Dark theme support */
+@media (prefers-color-scheme: dark) {
+  .home-header {
+    background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
+  }
+  
+  .nav-link {
+    color: rgba(255, 255, 255, 0.95);
+  }
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+  .home-header {
+    background: #000;
+    border-bottom: 2px solid #fff;
+  }
+  
+  .nav-link, .nav-button {
+    border: 2px solid #fff;
+    background: #000;
+    color: #fff;
+  }
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+  .nav-link, .nav-button, .logo {
+    transition: none;
+    animation: none;
+  }
+  
+  .home-header {
+    transition: none;
+  }
+}

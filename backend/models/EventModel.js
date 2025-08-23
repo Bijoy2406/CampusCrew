@@ -47,6 +47,10 @@ const EventSchema = new Schema({
     registration_fee: {
         type: Number,
         required: true
+    },
+    organizer: {
+        type: String,
+        required: true
     }
 }, {
     timestamps: true

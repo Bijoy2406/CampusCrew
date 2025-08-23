@@ -46,11 +46,44 @@ export const apiService = {
   // Update user profile
   updateProfile: (profileData) => api.put('/profile', profileData),
   
+  // Upload profile photo
+  uploadProfilePhoto: (userId, formData) => {
+    return axios.put(`${API_BASE_URL}/upload-photo/${userId}`, formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+        'Authorization': `Bearer ${localStorage.getItem('auth-token')}`,
+      },
+    });
+  },
+  
   // Login
   login: (credentials) => api.post('/login', credentials),
   
   // Register
   register: (userData) => api.post('/signup', userData),
+  
+  // Event APIs
+  createEvent: (eventData) => {
+    return axios.post(`${API_BASE_URL}/events`, eventData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+        'Authorization': `Bearer ${localStorage.getItem('auth-token')}`,
+      },
+    });
+  },
+  
+  getEvents: () => api.get('/events'),
+  
+  updateEvent: (eventId, eventData) => {
+    return axios.put(`${API_BASE_URL}/events/${eventId}`, eventData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+        'Authorization': `Bearer ${localStorage.getItem('auth-token')}`,
+      },
+    });
+  },
+  
+  deleteEvent: (eventId) => api.delete(`/events/${eventId}`),
 };
 
 export default api;
