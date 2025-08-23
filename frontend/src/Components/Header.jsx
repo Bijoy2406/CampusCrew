@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from "react";
 import { Link } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
 import { useTheme } from "../contexts/ThemeContext";
-import logo from "../assets/img/abacus.png";
+import logo from "../assets/img/campuscrew.png";
 import "../CSS/home.css";
 import "../CSS/header.css";
 import "../CSS/themes.css";

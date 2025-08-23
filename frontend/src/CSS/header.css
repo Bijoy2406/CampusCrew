@@ -17,6 +17,7 @@ html {
   box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
 }
 
+
 /* Logo animation keyframes */
 @keyframes logoGlow {
   0%, 100% {
@@ -30,6 +31,7 @@ html {
 .logo img {
   animation: logoGlow 3s ease-in-out infinite;
 }
+
 
 /* Navigation link active state */
 .nav-link.active {

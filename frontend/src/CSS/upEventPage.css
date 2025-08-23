@@ -1,97 +1,288 @@
-/* Card styling */
-.event-card {
-  border-radius: 20px;
-  overflow: hidden;
-  transition: transform 0.3s ease, box-shadow 0.3s ease;
-  border: 1px solid #ddd;
-}
-
-.event-card:hover {
-  transform: translateY(-7px);
-  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.25);
-}
-
-/* Image styling */
-.event-img {
-  height: 220px;
-  object-fit: cover;
-}
-
-/* Placeholder */
-.no-image {
-  width: 100%;
-  height: 220px;
-  background-color: #f0f0f0;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  color: #999;
-  font-weight: bold;
-}
-
-/* Badges styling */
-.badge-duration,
-.badge-prize,
-.badge-fee {
+/* Visually hidden title */
+.sr-only {
   position: absolute;
-  padding: 0.5em 0.8em;
-  font-size: 0.85rem;
-  border-radius: 50px;
-  color: #fff;
-  font-weight: bold;
+  width: 1px; height: 1px;
+  padding: 0; margin: -1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  border: 0;
 }
 
-/* Position badges */
-.badge-duration {
-  top: 10px;
-  right: 10px;
-  background: linear-gradient(45deg, #6a11cb, #2575fc);
+/* Page */
+.eventsPage-container {
+  --page-gradient-start: #dfe4e6;
+  --page-gradient-end: #ffffff;
+  --overlay-gradient: linear-gradient(
+    to top,
+    rgba(0,0,0,0.82) 0%,
+    rgba(0,0,0,0.55) 38%,
+    rgba(0,0,0,0.15) 72%,
+    rgba(0,0,0,0) 100%
+  );
+  background: linear-gradient(115deg, var(--page-gradient-start), var(--page-gradient-end));
+  min-height: 100vh;
+  font-family: "Inter", system-ui, sans-serif;
+  color: #111;
 }
 
-.badge-prize {
-  top: 10px;
-  left: 10px;
-  background: linear-gradient(45deg, #ff7e5f, #feb47b);
+.eventsPage-main {
+  max-width: 1320px;
+  margin: 0 auto;
+  padding: 3.5rem 2rem 4.5rem;
 }
 
-.badge-fee {
-  bottom: 10px;
-  right: 10px;
-  background: linear-gradient(45deg, #43cea2, #185a9d);
+/* States */
+.eventsPage-loading,
+.eventsPage-error,
+.eventsPage-noEvents {
+  text-align: center;
+  font-size: 1.05rem;
+  padding: 4rem 1.5rem;
+  color: #444;
 }
 
-/* Event details boxes */
-.event-detail-box {
-  border: 1px solid #ddd;
-  border-radius: 10px;
-  padding: 8px 12px;
-  margin-bottom: 8px;
-  font-size: 14px;
-  color: #333;
-  background: #fafafa;
+/* EXACTLY 3 columns on large screens */
+.eventCard-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 2.8rem 2.4rem;
+  align-items: start;
 }
 
-/* Register button */
-.btn-theme {
-  background: linear-gradient(45deg, #ff416c, #ff4b2b);
-  border: none;
-  color: #fff;
-  font-weight: bold;
-  border-radius: 12px;
-  padding: 10px 15px;
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
+/* Card bigger */
+.eventCard {
+  position: relative;
+  height: 360px;
+  border-radius: 4px;
+  overflow: hidden;
+  background: #222;
+  box-shadow:
+    0 6px 14px rgba(0,0,0,0.12),
+    0 20px 34px rgba(0,0,0,0.10);
+  animation: cardFadeUp 0.55s cubic-bezier(.25,.46,.45,.94) forwards;
+  opacity: 0;
+  transform: translateY(28px);
+  isolation: isolate;
+  transition: box-shadow .5s ease, transform .5s ease;
 }
 
-.btn-theme:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 5px 15px rgba(255, 75, 43, 0.5);
+.eventCard:hover {
+  box-shadow:
+    0 14px 26px rgba(0,0,0,0.18),
+    0 28px 60px rgba(0,0,0,0.22);
+  transform: translateY(-10px) scale(1.015);
 }
-.events-page-container {
+
+@keyframes cardFadeUp {
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.eventCard-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  filter: saturate(1.05);
+  transition: transform .75s ease, filter .75s ease;
+}
+
+.eventCard:hover .eventCard-image {
+  transform: scale(1.06);
+  filter: saturate(1.2);
+}
+
+.eventCard-image--placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background:
+    repeating-linear-gradient(135deg,#2f3134 0 14px,#3a3d41 14px 28px);
+  color: #bbb;
+  font-size: .9rem;
+  letter-spacing: .5px;
+  font-weight: 500;
+}
+
+/* Full gradient overlay (kept subtle) */
+.eventCard-gradient {
+  position: absolute;
+  inset: 0;
+  background: var(--overlay-gradient);
+  pointer-events: none;
+  z-index: 1;
+}
+
+/* Blurred info bar at bottom */
+.eventCard-infoBar {
+  position: absolute;
+  inset-inline: 0;
+  bottom: 0;
+  display: flex;
+  align-items: stretch;
+  padding: 0;
+  z-index: 2;
+  backdrop-filter: blur(10px) saturate(160%);
+  -webkit-backdrop-filter: blur(10px) saturate(160%);
+  background: rgba(15, 15, 15, 0.35);
+  border-top: 1px solid rgba(255,255,255,0.08);
+  pointer-events: none; /* text not interactive right now */
+}
+
+/* Date block */
+.eventCard-dateBlock {
+  width: 74px;
+  min-width: 74px;
+  padding: 14px 0 14px 16px;
   display: flex;
   flex-direction: column;
-  min-height: 100vh; /* Full viewport height */
+  justify-content: flex-end;
+  text-transform: uppercase;
+  font-weight: 600;
+  line-height: 1;
+  color: #fff;
+  letter-spacing: .5px;
+  font-size: .85rem;
 }
 
-.flex-grow-1 {
-  flex: 1; /* Makes main content grow to push footer down */
+.eventCard-dateTop {
+  font-size: .8rem;
+  font-weight: 600;
+  opacity: .95;
+}
+
+.eventCard-dateBottom {
+  font-size: 1.05rem;
+  font-weight: 700;
+  margin-top: 2px;
+  letter-spacing: .6px;
+}
+
+/* Divider */
+.eventCard-divider {
+  width: 1px;
+  margin: 12px 18px 12px 0;
+  background: linear-gradient(to bottom,
+    rgba(255,255,255,0) 0%,
+    rgba(255,255,255,.55) 16%,
+    rgba(255,255,255,.55) 84%,
+    rgba(255,255,255,0) 100%);
+}
+
+/* Meta */
+.eventCard-meta {
+  padding: 14px 18px 16px 0;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  gap: 4px;
+  color: #fff;
+}
+
+.eventCard-category {
+  font-size: .58rem;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+  color: rgba(255,255,255,.9);
+  opacity: .9;
+}
+
+.eventCard-title {
+  font-size: .88rem;
+  font-weight: 600;
+  line-height: 1.25;
+  margin: 0;
+  letter-spacing: .25px;
+  color: #fff;
+  max-height: 2.6em;
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+}
+
+.eventCard-location {
+  font-size: .66rem;
+  line-height: 1.2;
+  margin: 2px 0 0;
+  color: rgba(255,255,255,.78);
+  font-weight: 400;
+  letter-spacing: .35px;
+  max-height: 2.4em;
+  overflow: hidden;
+}
+
+/* Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  .eventCard,
+  .eventCard-image {
+    transition: none;
+    animation: none;
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* Breakpoints — maintain 3 cols until narrower screens */
+@media (max-width: 1200px) {
+  .eventCard-grid {
+    gap: 2.4rem 2rem;
+  }
+  .eventCard {
+    height: 340px;
+  }
+}
+
+@media (max-width: 1020px) {
+  .eventCard-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 680px) {
+  .eventsPage-main {
+    padding: 2.8rem 1.25rem 3.5rem;
+  }
+  .eventCard-grid {
+    gap: 1.9rem 1.6rem;
+  }
+  .eventCard {
+    height: 320px;
+  }
+  .eventCard-dateBlock {
+    width: 66px;
+    min-width: 66px;
+    padding: 12px 0 12px 14px;
+  }
+  .eventCard-divider {
+    margin: 10px 14px 10px 0;
+  }
+  .eventCard-meta {
+    padding: 12px 16px 14px 0;
+  }
+}
+
+@media (max-width: 500px) {
+  .eventCard-grid {
+    grid-template-columns: 1fr;
+    gap: 1.4rem;
+  }
+  .eventCard {
+    height: 340px;
+  }
+}
+
+/* Optional dark theme */
+[data-theme="dark"] .eventsPage-container {
+  --page-gradient-start: #1f2426;
+  --page-gradient-end: #2b3134;
+  color: #f5f5f5;
+}
+
+[data-theme="dark"] .eventCard-infoBar {
+  background: rgba(15,15,15,0.55);
+  border-top: 1px solid rgba(255,255,255,0.06);
 }
