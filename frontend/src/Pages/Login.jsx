@@ -21,6 +21,8 @@ import stars from "../assets/img/stars.png";
 import white_outline from "../assets/img/white_outline.png";
 
 function Login() {
+  const backend_link = import.meta.env.VITE_BACKEND_LINK;
+  console.log(backend_link);
   const [showLogin, setShowLogin] = useState(true);
   const [loginForm, setLoginForm] = useState({ email: "", password: "" });
   const [registerForm, setRegisterForm] = useState({
@@ -57,7 +59,7 @@ function Login() {
     setLoading(true); // Show loader
     try {
       const response = await axios.post(
-        "http://localhost:8000/api/login",
+        `${backend_link}/api/login`,
         loginForm, // Axios automatically stringifies JSON
         {
           headers: {
@@ -147,7 +149,7 @@ function Login() {
     setLoading(true); // Show loader
 
     try {
-      const response = await axios.post("http://localhost:8000/api/signup", {
+      const response = await axios.post(`${backend_link}/api/signup`, {
         username: registerForm.username,
         email: registerForm.email,
         password: registerForm.password,
