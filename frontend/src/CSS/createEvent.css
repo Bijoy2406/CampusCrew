@@ -378,6 +378,59 @@
   margin-right: 0.5rem;
 }
 
+/* Input select styling */
+.ce-input[type="select"],
+.ce-form select {
+  appearance: none;
+  background-image: url("data:image/svg+xml;charset=US-ASCII,<svg viewBox='0 0 4 5' xmlns='http://www.w3.org/2000/svg'><path d='m2 0-2 2h4zm0 5 2-2h-4z' fill='%23666'/></svg>");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  background-size: 12px;
+  cursor: pointer;
+}
+
+/* File input special styling */
+.ce-input[type="file"] {
+  padding: 0.7rem;
+  cursor: pointer;
+}
+
+.ce-input[type="file"]::-webkit-file-upload-button {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  padding: 0.5rem 1rem;
+  margin-right: 1rem;
+  cursor: pointer;
+  font-size: 0.9rem;
+  transition: all 0.3s ease;
+}
+
+.ce-input[type="file"]::-webkit-file-upload-button:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(102, 126, 234, 0.3);
+}
+
+/* Help text */
+.ce-help-text {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  margin-top: 0.5rem;
+  opacity: 0.8;
+}
+
+/* Date time local input specific styling */
+.ce-input[type="datetime-local"] {
+  color: var(--text-primary);
+}
+
+.ce-input[type="datetime-local"]::-webkit-calendar-picker-indicator {
+  background-image: url("data:image/svg+xml;charset=US-ASCII,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'><path fill='%23666' d='M5 1v2H4V1H2v2h3v1H2v10h12V4h-3V3h3V1h-2v2h-1V1z'/></svg>");
+  color: var(--text-primary);
+  cursor: pointer;
+}
+
 @keyframes spin {
   0% { transform: rotate(0deg); }
   100% { transform: rotate(360deg); }
