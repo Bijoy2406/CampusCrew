@@ -5,7 +5,9 @@ import logo from "../assets/img/abacus.png";
 import "../CSS/home.css";
 
 function Header() {
-  const { isAuthenticated, logout } = useAuth();
+  const { isAuthenticated, logout, user } = useAuth();
+  const isAdmin = user && user.isAdmin; // Use isAdmin property from backend data
+  
   return (
     <>
       {" "}
@@ -18,6 +20,26 @@ function Header() {
         <nav className="main-nav">
           {isAuthenticated ? (
             <>
+              <Link to="/upcoming-events" className="nav-link">
+                Upcoming Events
+              </Link>
+              {isAdmin && (
+                <Link to="/create-event" className="nav-link">
+                  Create Event
+                </Link>
+              )}
+              <Link to="/joined-events" className="nav-link">
+                Joined Events
+              </Link>
+              <Link to="/manage-events" className="nav-link">
+                Manage Events
+              </Link>
+              <Link to="/about" className="nav-link">
+                About
+              </Link>
+              <Link to="/contact" className="nav-link">
+                Contact Us
+              </Link>
               <Link to="/profile" className="nav-link">
                 Profile
               </Link>

@@ -165,6 +165,9 @@ const Profile = () => {
                 <p className="profile-dob">
                   <FaCalendarAlt /> Born: {profileData.dob ? new Date(profileData.dob).toLocaleDateString() : 'Not provided'}
                 </p>
+                <p className="profile-status">
+                  <FaUser /> Status: {profileData.isAdmin ? 'Admin' : 'Student'}
+                </p>
                 <button onClick={handleEdit} className="edit-btn">
                   <FaEdit /> Edit Profile
                 </button>
