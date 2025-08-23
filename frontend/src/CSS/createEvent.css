@@ -1,74 +1,429 @@
+/* Create Event Page - Dark/Light Mode Compatible */
+
+/* Wrapper for the entire create event page */
+.ce-wrapper {
+  min-height: 100vh;
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+/* Event form container */
+.ce-form-container {
+  display: flex;
+  justify-content: center;
+  margin: 2rem 0;
+  padding: 0 1rem;
+}
+
 /* Event form */
-.event-form {
+.ce-form {
   max-width: 700px;
-  background-color: #e0f7ff; /* Sky blue */
+  background-color: var(--bg-card);
+  border: 1px solid var(--border-light);
+  padding: 2.5rem;
+  border-radius: 16px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  transition: all 0.3s ease;
+  animation: slideInUp 0.5s ease-out;
 }
 
-/* Buttons */
-.btn-sky {
-  background-color: #00bfff;
-  color: white;
-  border: none;
+.ce-form:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.15);
 }
 
-.btn-sky:hover {
-  background-color: #009acd;
+/* Form title */
+.ce-form-title {
+  text-align: center;
+  font-size: 2.2rem;
+  margin-bottom: 1.5rem;
+  color: var(--text-primary);
+  font-weight: 700;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
 }
 
-/* Input hover effect */
-.form-hover:hover,
-.form-hover:focus {
-  border-color: #00bfff;
-  box-shadow: 0 0 5px #00bfff;
-  transition: all 0.2s;
+/* Fallback for gradient text in unsupported browsers */
+.ce-form-title {
+  color: #667eea;
 }
 
-/* Input group icons */
-.input-group-text.bg-sky {
-  background-color: #00bfff; /* Sky blue */
-  border: none;
-  color: #003f5c; /* dark navy for readability */
-  font-size: 1.2em;
+@supports (background-clip: text) or (-webkit-background-clip: text) {
+  .ce-form-title {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
 }
 
-.input-group-text.bg-sky i {
-  color: #003f5c; /* dark navy */
-  font-size: 1.2em;
+/* Labels */
+.ce-label {
+  font-size: 1.1rem;
+  color: var(--text-primary);
+  margin-bottom: 0.5rem;
+  font-weight: 600;
+  display: block;
 }
 
-/* Rounded badges for guests */
-.badge {
-  border-radius: 12px;
-  padding: 0.5em 0.7em;
-  font-size: 0.9em;
+/* Inputs and textareas */
+.ce-input,
+.ce-textarea {
+  padding: 0.75rem 1rem;
+  font-size: 1rem;
+  border: 2px solid var(--border-light);
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+  border-radius: 10px;
+  transition: all 0.3s ease;
+  outline: none;
+  width: 100%;
 }
 
-/* Labels style */
-.form-label {
-  font-size: 1.1em;
-  color: #007bb5;
+.ce-input::placeholder,
+.ce-textarea::placeholder {
+  color: var(--text-secondary);
+  opacity: 0.7;
 }
 
-/* Space between rows */
-.row > .col-md-4 {
+.ce-input:hover,
+.ce-textarea:hover {
+  border-color: #667eea;
+  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+.ce-input:focus,
+.ce-textarea:focus {
+  border-color: #667eea;
+  box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.2);
+  background-color: var(--bg-card);
+}
+
+/* Textarea specific */
+.ce-textarea {
+  min-height: 120px;
+  resize: vertical;
+  font-family: inherit;
+}
+
+/* Rows for duration, date/time */
+.ce-form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+
+/* Individual form field */
+.ce-form-field,
+.ce-form-group {
   display: flex;
   flex-direction: column;
 }
 
-/* Adjust height for inputs */
-.form-control {
-  height: 45px;
+/* Inline input + button */
+.ce-input-inline {
+  display: flex;
+  gap: 0.5rem;
+  align-items: stretch;
 }
 
-/* Date and Time text color */
-input[type="date"],
-input[type="time"] {
-  color: #000; /* text color */
+.ce-input-inline .ce-input {
+  flex: 1;
 }
 
-/* Force placeholder text to black */
-input[type="date"]::placeholder,
-input[type="time"]::placeholder {
-  color: #000; /* placeholder color */
-  opacity: 1;
+/* Buttons */
+.ce-btn {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border: none;
+  padding: 0.75rem 1.5rem;
+  border-radius: 10px;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 1rem;
+  transition: all 0.3s ease;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.ce-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(102, 126, 234, 0.3);
+  background: linear-gradient(135deg, #5a67d8 0%, #6b46c1 100%);
+}
+
+.ce-btn:active {
+  transform: translateY(0);
+}
+
+.ce-btn:focus {
+  outline: 2px solid #667eea;
+  outline-offset: 2px;
+}
+
+/* Secondary button variant */
+.ce-btn-secondary {
+  background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+}
+
+.ce-btn-secondary:hover {
+  background: linear-gradient(135deg, #3182ce 0%, #0891b2 100%);
+}
+
+.ce-full-width {
+  width: 100%;
+  padding: 1rem 1.5rem;
+  font-size: 1.1rem;
+}
+
+/* Guests badges */
+.ce-guest-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-top: 0.75rem;
+}
+
+.ce-guest-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  padding: 0.5rem 1rem;
+  border-radius: 20px;
+  font-size: 0.9rem;
+  font-weight: 500;
+  animation: fadeInScale 0.3s ease-out;
+}
+
+.ce-remove-btn {
+  background: rgba(255, 255, 255, 0.2);
+  border: none;
+  color: white;
+  font-weight: bold;
+  cursor: pointer;
+  padding: 0.25rem;
+  border-radius: 50%;
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  transition: all 0.2s ease;
+}
+
+.ce-remove-btn:hover {
+  background: rgba(255, 255, 255, 0.3);
+  transform: scale(1.1);
+}
+
+/* Date and time input styling */
+.ce-input[type="date"],
+.ce-input[type="time"],
+.ce-input[type="number"] {
+  cursor: pointer;
+}
+
+.ce-input[type="date"]::-webkit-calendar-picker-indicator,
+.ce-input[type="time"]::-webkit-calendar-picker-indicator {
+  cursor: pointer;
+  filter: invert(0.5);
+  transition: filter 0.3s ease;
+}
+
+/* Dark mode specific adjustments */
+[data-theme="dark"] .ce-input[type="date"]::-webkit-calendar-picker-indicator,
+[data-theme="dark"] .ce-input[type="time"]::-webkit-calendar-picker-indicator {
+  filter: invert(0.8);
+}
+
+[data-theme="dark"] .ce-input[type="date"],
+[data-theme="dark"] .ce-input[type="time"],
+[data-theme="dark"] .ce-input[type="number"] {
+  color: var(--text-primary);
+}
+
+/* Enhanced dark mode form styling */
+[data-theme="dark"] .ce-form {
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+}
+
+[data-theme="dark"] .ce-form:hover {
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.4);
+}
+
+/* Dark mode input focus states */
+[data-theme="dark"] .ce-input:focus,
+[data-theme="dark"] .ce-textarea:focus {
+  box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.3);
+}
+
+/* Dark mode button shadows */
+[data-theme="dark"] .ce-btn:hover {
+  box-shadow: 0 8px 25px rgba(102, 126, 234, 0.4);
+}
+
+/* Number input styling */
+.ce-input[type="number"] {
+  appearance: textfield;
+  -moz-appearance: textfield;
+}
+
+.ce-input[type="number"]::-webkit-outer-spin-button,
+.ce-input[type="number"]::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+  .ce-form-container {
+    margin: 1rem 0;
+    padding: 0 0.5rem;
+  }
+  
+  .ce-form {
+    padding: 1.5rem;
+  }
+  
+  .ce-form-title {
+    font-size: 1.8rem;
+  }
+  
+  .ce-form-row {
+    grid-template-columns: 1fr;
+  }
+  
+  .ce-input-inline {
+    flex-direction: column;
+  }
+  
+  .ce-input-inline .ce-btn {
+    margin-top: 0.5rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .ce-form {
+    padding: 1rem;
+  }
+  
+  .ce-form-title {
+    font-size: 1.6rem;
+  }
+  
+  .ce-guest-list {
+    gap: 0.5rem;
+  }
+  
+  .ce-guest-item {
+    font-size: 0.8rem;
+    padding: 0.4rem 0.8rem;
+  }
+}
+
+/* Animations */
+@keyframes slideInUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fadeInScale {
+  from {
+    opacity: 0;
+    transform: scale(0.8);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* Loading states */
+.ce-btn:disabled,
+.ce-btn-loading {
+  opacity: 0.7;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.ce-btn:disabled:hover,
+.ce-btn-loading:hover {
+  transform: none;
+  box-shadow: none;
+}
+
+.ce-loading-spinner {
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  border: 2px solid transparent;
+  border-top: 2px solid white;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin-right: 0.5rem;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* Focus states for accessibility */
+.ce-input:focus,
+.ce-textarea:focus,
+.ce-btn:focus {
+  outline: 2px solid #667eea;
+  outline-offset: 2px;
+}
+
+/* Enhanced visual feedback */
+.ce-form-field:hover .ce-label,
+.ce-form-group:hover .ce-label {
+  color: #667eea;
+  transition: color 0.3s ease;
+}
+
+/* Success/error states (for future use) */
+.ce-input.success {
+  border-color: #48bb78;
+  box-shadow: 0 0 0 3px rgba(72, 187, 120, 0.1);
+}
+
+.ce-input.error {
+  border-color: #f56565;
+  box-shadow: 0 0 0 3px rgba(245, 101, 101, 0.1);
+}
+
+/* Custom scrollbar for textarea in dark mode */
+[data-theme="dark"] .ce-textarea::-webkit-scrollbar {
+  width: 8px;
+}
+
+[data-theme="dark"] .ce-textarea::-webkit-scrollbar-track {
+  background: var(--bg-primary);
+  border-radius: 4px;
+}
+
+[data-theme="dark"] .ce-textarea::-webkit-scrollbar-thumb {
+  background: var(--border-light);
+  border-radius: 4px;
+}
+
+[data-theme="dark"] .ce-textarea::-webkit-scrollbar-thumb:hover {
+  background: #667eea;
 }

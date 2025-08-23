@@ -8,8 +8,7 @@ import Loader from "../Components/loader_login"; // Import the Loader component
 import { useAuth } from "../contexts/AuthContext";
 // import { fetchWithToken } from "../Utils/authUtils";
 import PasswordChecklist from "react-password-checklist";
-import { toast, ToastContainer } from "react-toastify";
-import "react-toastify/dist/ReactToastify.css";
+import { showSuccessToast, showErrorToast, showWarningToast, showInfoToast } from "../utils/toastUtils";
 import axios from "axios";
 
 import cloud from "../assets/img/cloud.png";
@@ -74,33 +73,36 @@ function Login() {
       if (data.success) {
         const user = data.user;
         if (user && user.isAdmin && !user.isApprovedAdmin) {
-          toast.error("You are not approved as an admin yet.");
+          showWarningToast("You are not approved as an admin yet.");
         } else {
           // Use the auth context login function
-          login(data.token, user);
+          await login(data.token, data.refreshtoken, user);
           localStorage.setItem("refresh-token", data.refreshtoken); // Store refresh token
-          toast.success("Login successful!");
-          navigate("/"); // Navigate to home page
+          showSuccessToast("Login successful! Welcome back!");
+          // Small delay to ensure state updates are completed
+          setTimeout(() => {
+            navigate("/"); // Navigate to home page
+          }, 100);
         }
       } else {
-        toast.error(data.errors || "Login failed. Please try again.");
+        showErrorToast(data.errors || "Login failed. Please try again.");
       }
     } catch (error) {
       if (error.response) {
         // Server responded with a status other than 2xx
         console.error("Server error:", error.response);
-        toast.error(
+        showErrorToast(
           error.response.data?.errors ||
             `HTTP error! status: ${error.response.status}`
         );
       } else if (error.request) {
         // Request was made but no response
         console.error("No response received:", error.request);
-        toast.error("No response from server. Please try again.");
+        showErrorToast("No response from server. Please try again.");
       } else {
         // Other errors
         console.error("Axios error:", error.message);
-        toast.error("An error occurred during login. Please try again.");
+        showErrorToast("An error occurred during login. Please try again.");
       }
     } finally {
       setLoading(false); // Hide loader
@@ -134,7 +136,7 @@ function Login() {
       }
     } catch (error) {
       console.error("Error refreshing access token:", error);
-      toast.error("Session expired, please log in again.");
+      showErrorToast("Session expired, please log in again.");
       localStorage.removeItem("auth-token");
       localStorage.removeItem("refresh-token");
       window.location.replace("/login");
@@ -143,7 +145,7 @@ function Login() {
 
   const signup = async () => {
     if (!isPasswordValid) {
-      toast.error("Password does not meet the criteria.");
+      showWarningToast("Password does not meet the criteria.");
       return; // Exit the function if password criteria are not met
     }
     setLoading(true); // Show loader
@@ -161,16 +163,16 @@ function Login() {
       const data = response.data; // axios automatically parses JSON
 
       if (data.success) {
-        toast.success(
+        showSuccessToast(
           "Signup successful! Please check your email for a verification link."
         );
         setShowLogin(true); // Redirect to sign-in state
       } else {
-        toast.error(data.errors || "Signup failed");
+        showErrorToast(data.errors || "Signup failed");
       }
     } catch (error) {
       console.error("Failed to fetch during signup:", error);
-      toast.error(error.response?.data?.message || "Signup request failed");
+      showErrorToast(error.response?.data?.message || "Signup request failed");
     } finally {
       setLoading(false); // Hide loader
     }
@@ -442,7 +444,6 @@ function Login() {
           </div>
         )}
       </div>
-      <ToastContainer />
     </div>
   );
 }
