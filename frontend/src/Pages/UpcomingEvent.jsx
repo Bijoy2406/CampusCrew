@@ -1,10 +1,9 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
-import "bootstrap/dist/css/bootstrap.min.css";
+import { Link } from 'react-router-dom';
 import "../CSS/upEventPage.css";
 import Footer from "../Components/Footer";
- import Header from "../Components/Header"; // Adjust the path according to your folder structure
-
+import Header from "../Components/Header";
 
 function EventsPage() {
   const backend_link = import.meta.env.VITE_BACKEND_LINK;
@@ -17,7 +16,7 @@ function EventsPage() {
       try {
         const response = await axios.get(`${backend_link}/api/events`);
         if (response.data.success) {
-          setEvents(response.data.events);
+          setEvents(response.data.events || []);
         } else {
           setError("Failed to load events");
         }
@@ -29,72 +28,97 @@ function EventsPage() {
       }
     };
     fetchEvents();
-  }, []);
+  }, [backend_link]);
 
-  if (loading) return <p className="text-center mt-5">Loading events...</p>;
-  if (error) return <p className="text-center text-danger mt-5">{error}</p>;
+  if (loading) return <p className="eventsPage-loading">Loading events...</p>;
+  if (error) return <p className="eventsPage-error">{error}</p>;
 
   return (
-    <div className="events-page-container d-flex flex-column min-vh-100">
-      {/* Header */}
+    <div className="eventsPage-container">
       <Header />
-      {/* Main content */}
-      <div className="container my-5 flex-grow-1">
-        <h1 className="text-center mb-5">Upcoming Events</h1>
-        <div className="row">
-          {events.length === 0 && <p className="text-center">No events found</p>}
+      <main className="eventsPage-main">
+        <h1 className="sr-only">Upcoming Events</h1>
+        {events.length === 0 && (
+          <p className="eventsPage-noEvents">No events found.</p>
+        )}
 
-          {events.map((event) => {
-            let [hours = 0, minutes = 0] = event.duration
-              ? event.duration.split("h").map((s) => parseInt(s))
-              : [0, 0];
+        <div className="eventCard-grid">
+          {events.map((event, index) => {
+            const startDate = event.date ? new Date(event.date) : null;
+            const endDate = event.end_date ? new Date(event.end_date) : null;
+
+            const formatMonth = (d) =>
+              d.toLocaleDateString("en-US", { month: "short" });
+            const formatDay = (d) => d.getDate();
+
+            let dateTop = "";
+            let dateBottom = "";
+
+            if (startDate && endDate) {
+              if (startDate.getMonth() === endDate.getMonth()) {
+                dateTop = formatMonth(startDate);
+                dateBottom = `${formatDay(startDate)}-${formatDay(endDate)}`;
+              } else {
+                dateTop = `${formatMonth(startDate)} ${formatDay(startDate)}`;
+                dateBottom = `${formatMonth(endDate)} ${formatDay(endDate)}`;
+              }
+            } else if (startDate) {
+              dateTop = formatMonth(startDate);
+              dateBottom = formatDay(startDate);
+            } else {
+              dateTop = "--";
+              dateBottom = "--";
+            }
 
             return (
-              <div key={event._id} className="col-12 col-md-6 col-lg-4 mb-4">
-                <div className="card event-card shadow-sm h-100">
-                  <div className="position-relative">
-                    {event.event_image ? (
-                      <img
-                        src={event.event_image}
-                        className="card-img-top event-img"
-                        alt={event.title}
-                      />
-                    ) : (
-                      <div className="no-image">No Image</div>
-                    )}
-                    <span className="badge-prize">🏆 {event.prize_money} BDT</span>
-                    <span className="badge-fee">💰 {event.registration_fee} BDT</span>
+              <Link
+                to={`/events/${event._id}`}
+                key={event._id || index}
+                className="eventCard"
+                style={{ animationDelay: `${index * 70}ms` }}
+              >
+                {event.event_image ? (
+                  <img
+                    src={event.event_image}
+                    alt={event.title}
+                    className="eventCard-image"
+                    loading="lazy"
+                  />
+                ) : (
+                  <div className="eventCard-image eventCard-image--placeholder">
+                    <span>No Image</span>
                   </div>
-                  <div className="card-body d-flex flex-column">
-                    <h5 className="card-title">{event.title}</h5>
-                    <p className="card-text">{event.description}</p>
+                )}
 
-                    <div className="event-detail-box">
-                      <strong>Date:</strong> {new Date(event.date).toLocaleDateString()}
-                    </div>
-                    <div className="event-detail-box">
-                      <strong>Location:</strong> {event.location}
-                    </div>
-                    <div className="event-detail-box">
-                      <strong>Type:</strong> {event.event_type}
-                    </div>
-                    <div className="event-detail-box">
-                      <strong>Deadline:</strong>{" "}
-                      {new Date(event.registration_deadline).toLocaleDateString()}
-                    </div>
+                {/* Full dark gradient overlay */}
+                <div className="eventCard-gradient" aria-hidden="true" />
 
-                    <a href="#" className="btn btn-theme mt-auto">
-                      Register
-                    </a>
+                {/* Blurred info bar */}
+                <div className="eventCard-infoBar">
+                  <div className="eventCard-dateBlock">
+                    <span className="eventCard-dateTop">{dateTop}</span>
+                    <span className="eventCard-dateBottom">{dateBottom}</span>
+                  </div>
+
+                  <div className="eventCard-divider" aria-hidden="true" />
+
+                  <div className="eventCard-meta">
+                    <span className="eventCard-category">
+                      {(event.event_type || "EVENT").toUpperCase()}
+                    </span>
+                    <h3 className="eventCard-title" title={event.title}>
+                      {event.title}
+                    </h3>
+                    {event.location && (
+                      <p className="eventCard-location">{event.location}</p>
+                    )}
                   </div>
                 </div>
-              </div>
+              </Link>
             );
           })}
         </div>
-      </div>
-
-      {/* Sticky Footer */}
+      </main>
       <Footer />
     </div>
   );

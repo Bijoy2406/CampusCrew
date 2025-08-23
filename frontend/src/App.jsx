@@ -10,6 +10,8 @@ import ManageEvent from "./Pages/ManageEvent.jsx";
 import About from "./Pages/About.jsx";
 import Contact from "./Pages/Contact.jsx";
 import { useAuth } from "./contexts/AuthContext.jsx";
+import EventDetails from './Pages/EventDetails.jsx';
+import EditEvent from './Pages/EditEvent.jsx';
 
 function App() {
   const { isAuthenticated, loading } = useAuth();
@@ -55,6 +57,8 @@ function App() {
         />
         <Route path="/about" element={<About />} />
         <Route path="/contact" element={<Contact />} />
+  <Route path="/events/:id" element={isAuthenticated ? <EventDetails /> : <Navigate to="/login" replace />} />
+  <Route path="/events/:id/edit" element={isAuthenticated ? <EditEvent /> : <Navigate to="/login" replace />} />
         <Route path="/dashboard" element={<div>Dashboard Coming Soon</div>} />
       </Routes>
     </>

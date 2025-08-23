@@ -73,6 +73,7 @@ export const apiService = {
   },
   
   getEvents: () => api.get('/events'),
+  getEvent: (eventId) => api.get(`/events/${eventId}`),
   
   updateEvent: (eventId, eventData) => {
     return axios.put(`${API_BASE_URL}/events/${eventId}`, eventData, {
@@ -84,6 +85,11 @@ export const apiService = {
   },
   
   deleteEvent: (eventId) => api.delete(`/events/${eventId}`),
+
+  // Registration APIs
+  registerForEvent: (payload) => api.post('/register-event', payload),
+  getUserRegistrations: (userId) => api.get(`/registrations/user/${userId}`),
+  getEventRegistrations: (eventId) => api.get(`/registrations/event/${eventId}`),
 };
 
 export default api;
