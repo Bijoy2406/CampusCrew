@@ -37,7 +37,7 @@ const EventSchema = new Schema({
     event_type: {
         type: String,
         // enum: ['online', 'offline'],
-        // default: 'offline'
+        default: 'offline'
     },
 
     registration_deadline: {
@@ -51,7 +51,9 @@ const EventSchema = new Schema({
     organizer: {
         type: String,
         required: true
-    }
+    },
+    tags: [{ type: String, index: true }],
+    category: { type: String, default: '' },
 }, {
     timestamps: true
 })
