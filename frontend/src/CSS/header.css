@@ -12,19 +12,6 @@ html {
   box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
 }
 
-/* Logo animation keyframes */
-@keyframes logoGlow {
-  0%, 100% {
-    filter: brightness(1) drop-shadow(0 0 5px rgba(255, 255, 255, 0.3));
-  }
-  50% {
-    filter: brightness(1.2) drop-shadow(0 0 15px rgba(255, 255, 255, 0.6));
-  }
-}
-
-.logo img {
-  animation: logoGlow 3s ease-in-out infinite;
-}
 
 /* Navigation link active state */
 .nav-link.active {
