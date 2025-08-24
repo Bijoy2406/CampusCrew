@@ -19,7 +19,7 @@ const AboutUs = () => {
         <div className=" about-page">
           <div className="about-text">
             <h1>About Us</h1>
-            <p>
+            <p className="about-description">
               {" "}
               Who are we? We are a passionate team dedicated to delivering the
               best products and services. Our mission is to drive innovation and

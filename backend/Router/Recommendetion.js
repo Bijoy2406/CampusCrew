@@ -189,7 +189,9 @@ router.get('/suggested_events/:userId', async (req, res) => {
 
         // 1. Get user registration history
         const registrations = await Registration.find({ userId }).populate('eventId');
-        const registeredEvents = registrations.map(r => r.eventId);
+        const registeredEvents = registrations
+            .map(r => r.eventId)
+            .filter(event => event !== null); // Filter out null events
 
         // Collect registered event IDs
         const registeredEventIds = registeredEvents.map(e => e._id.toString());

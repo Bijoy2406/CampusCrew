@@ -7,7 +7,7 @@ function Loader({ color = "black" }) {
   };
 
   return (
-    <div className="modal">
+    <div className="loader-modal" role="status" aria-label="Loading">
       <svg
         className="loader-svg"
         x="0px"

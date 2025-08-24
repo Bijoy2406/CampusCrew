@@ -5,7 +5,7 @@ import Footer from "../Components/Footer";
 import { apiService } from "../utils/apiService";
 import { useAuth } from "../contexts/AuthContext";
 import { ToastContainer } from "react-toastify";
-import { showSuccessToast } from "../utils/toastUtils";
+import { showErrorToast, showSuccessToast } from "../utils/toastUtils";
 import Loader from "../Components/loader_login";
 import "../CSS/upEventPage.css";
 import "../CSS/eventDetails.css";
@@ -144,6 +144,25 @@ function EventDetails() {
     }
   };
 
+  const handleUnRegister = async () => {
+    console.log("unregister");
+    console.log(event._id);
+    console.log(user._id);
+    try {
+      const { data } = await axios.put(`${backend}/api/unregister`, {
+        userId: user._id,
+        eventId: event._id,
+      });
+      if (data.success) {
+        console.log(data);
+        showSuccessToast("Unregistered successfully. ");
+        showSuccessToast(data.message);
+      }
+    } catch (error) {
+      showErrorToast("Unregistration failed.");
+    }
+  };
+
   return (
     <div className="eventDetails-wrapper" style={{ fontFamily: "Silevena" }}>
       <Header />
@@ -272,15 +291,27 @@ function EventDetails() {
                   </>
                 ) : (
                   <>
-                    <button
-                      className={`ed-primaryBtn ${
-                        !isRegistered ? "pulse" : ""
-                      }`}
-                      onClick={handleRegister}
-                      disabled={isRegistered}
-                    >
-                      {isRegistered ? "Registered" : "Register Now"}
-                    </button>
+                    {!isRegistered && (
+                      <button
+                        className={`ed-primaryBtn ${
+                          !isRegistered ? "pulse" : ""
+                        }`}
+                        onClick={handleRegister}
+                        disabled={isRegistered}
+                      >
+                        Register Now
+                      </button>
+                    )}
+                    {isRegistered && (
+                      <button
+                        className={`ed-primaryBtn ${
+                          !isRegistered ? "pulse" : ""
+                        }`}
+                        onClick={() => handleUnRegister()}
+                      >
+                        Unregister
+                      </button>
+                    )}
                     <button
                       className="ed-outlineBtn"
                       onClick={() => navigate("/upcoming-events")}
@@ -290,15 +321,15 @@ function EventDetails() {
                   </>
                 )}
               </div>
-              {regError && !isRegistered && (
+              {isRegistered && (
                 <p
                   style={{
-                    color: "var(--error-color,#ff6b6b)",
+                    color: "rgb(78, 201, 176)",
                     fontSize: ".8rem",
                     marginTop: ".5rem",
                   }}
                 >
-                  {regError}
+                  You have registered for this event.
                 </p>
               )}
             </div>

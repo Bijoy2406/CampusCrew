@@ -18,16 +18,41 @@ function EventsPage() {
   const [sortOption, setSortOption] = useState("new"); // 'new' | 'popular' | 'relevant'
   const [sortDir, setSortDir] = useState("desc"); // 'asc' | 'desc'
 
-  // extract unique categories from events (use event.category)
-  const categories = [...new Set(events.map((e) => e.category).filter(Boolean))];
+  const CACHE_KEY = "events_cache";
+  const CACHE_TTL = 1000 * 60 * 10; // 10 minutes
+
+  // Extract unique categories
+  const categories = [
+    ...new Set(events.map((e) => e.category).filter(Boolean)),
+  ];
 
   useEffect(() => {
     const fetchEvents = async () => {
       try {
+        // 🔹 1. Try loading cache first
+        const cached = localStorage.getItem(CACHE_KEY);
+        if (cached) {
+          const { data, timestamp } = JSON.parse(cached);
+          if (Date.now() - timestamp < CACHE_TTL) {
+            setEvents(data);
+            setFilteredEvents(data);
+            setLoading(false);
+            return; // ✅ Load from cache, skip API
+          }
+        }
+
+        // 🔹 2. No cache or stale cache, fetch from API
         const response = await axios.get(`${backend_link}/api/events`);
         if (response.data.success) {
-          setEvents(response.data.events || []);
-          setFilteredEvents(response.data.events || []);
+          const eventData = response.data.events || [];
+          setEvents(eventData);
+          setFilteredEvents(eventData);
+
+          // 🔹 3. Save new data to localStorage
+          localStorage.setItem(
+            CACHE_KEY,
+            JSON.stringify({ data: eventData, timestamp: Date.now() })
+          );
         } else {
           setError("Failed to load events");
         }
@@ -44,17 +69,13 @@ function EventsPage() {
   // Scroll listener for sticky + blur search bar
   useEffect(() => {
     const handleScroll = () => {
-      if (window.scrollY > 50) {
-        setIsShrunk(true);
-      } else {
-        setIsShrunk(false);
-      }
+      setIsShrunk(window.scrollY > 50);
     };
     window.addEventListener("scroll", handleScroll);
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
-  // Reset to original size + scroll to top whenever an input/dropdown is focused
+  // Reset scroll when focusing search input
   const handleFocus = () => {
     setIsShrunk(false);
     window.scrollTo({ top: 0, behavior: "smooth" });
@@ -63,8 +84,8 @@ function EventsPage() {
   // Combined search and filters (title, category, fee)
   useEffect(() => {
     const q = searchQuery.trim().toLowerCase();
-    let working = events.filter((event) =>
-      !q || (event.title || "").toLowerCase().includes(q)
+    let working = events.filter(
+      (event) => !q || (event.title || "").toLowerCase().includes(q)
     );
 
     if (categoryFilter) {
@@ -81,34 +102,31 @@ function EventsPage() {
       }
     }
 
-    // ----- Sorting logic -----
+    // Sorting
     const sorters = {
       new: (a, b) => {
-        // Prefer createdAt (schema has timestamps) fallback to start date
         const da = new Date(a.createdAt || a.date || 0).getTime();
         const db = new Date(b.createdAt || b.date || 0).getTime();
         return da - db;
       },
       popular: (a, b) => {
-        // Try several possible popularity fields; fallback 0
         const pop = (e) =>
           e.registrations_count ??
           e.registrationCount ??
           e.popularity ??
           e.participants ??
-          e.prize_money ?? // weak proxy
+          e.prize_money ??
           0;
         return pop(a) - pop(b);
       },
       relevant: (a, b) => {
-        // Relevance: nearest upcoming date first; past events sink
         const now = Date.now();
         const ta = new Date(a.date || a.createdAt || 0).getTime();
         const tb = new Date(b.date || b.createdAt || 0).getTime();
         const aPast = ta < now;
         const bPast = tb < now;
-        if (aPast !== bPast) return aPast ? 1 : -1; // upcoming before past
-        return ta - tb; // earlier (sooner) first
+        if (aPast !== bPast) return aPast ? 1 : -1;
+        return ta - tb;
       },
     };
 
@@ -125,7 +143,6 @@ function EventsPage() {
 
   if (loading) return <p className="eventsPage-loading">Loading events...</p>;
   if (error) return <p className="eventsPage-error">{error}</p>;
-
   return (
     <div className="eventsPage-container">
       <Header />
@@ -175,29 +192,51 @@ function EventsPage() {
             </div>
 
             {/* Fee Toggle Pills */}
-            <div className="fx-feeToggle fx-item" role="group" aria-label="Filter by pricing">
+            <div
+              className="fx-feeToggle fx-item"
+              role="group"
+              aria-label="Filter by pricing"
+            >
               {[
-                { label: 'All', val: ''},
-                { label: 'Free', val: 'free'},
-                { label: 'Paid', val: 'paid'}
-              ].map(btn => (
+                { label: "All", val: "" },
+                { label: "Free", val: "free" },
+                { label: "Paid", val: "paid" },
+              ].map((btn) => (
                 <button
-                  key={btn.val || 'all'}
+                  key={btn.val || "all"}
                   type="button"
                   className="fx-pill"
                   data-active={feeFilter === btn.val}
-                  onClick={() => { setFeeFilter(btn.val); handleFocus(); }}
-                >{btn.label}</button>
+                  onClick={() => {
+                    setFeeFilter(btn.val);
+                    handleFocus();
+                  }}
+                >
+                  {btn.label}
+                </button>
               ))}
-              <span className="fx-pill-indicator" style={{'--fx-index': feeFilter === 'free' ? 1 : feeFilter === 'paid' ? 2 : 0}} />
+              <span
+                className="fx-pill-indicator"
+                style={{
+                  "--fx-index":
+                    feeFilter === "free" ? 1 : feeFilter === "paid" ? 2 : 0,
+                }}
+              />
             </div>
 
             {/* Sorting Controls */}
-            <div className="fx-sortControls fx-item" role="group" aria-label="Sort events">
+            <div
+              className="fx-sortControls fx-item"
+              role="group"
+              aria-label="Sort events"
+            >
               <select
                 className="fx-sortSelect"
                 value={sortOption}
-                onChange={(e) => { setSortOption(e.target.value); handleFocus(); }}
+                onChange={(e) => {
+                  setSortOption(e.target.value);
+                  handleFocus();
+                }}
                 onFocus={handleFocus}
                 aria-label="Sort criteria"
               >
@@ -208,11 +247,15 @@ function EventsPage() {
               <button
                 type="button"
                 className="fx-sortDirBtn"
-                onClick={() => setSortDir(d => d === 'asc' ? 'desc' : 'asc')}
-                title={`Toggle sort direction (currently ${sortDir === 'asc' ? 'Ascending' : 'Descending'})`}
+                onClick={() =>
+                  setSortDir((d) => (d === "asc" ? "desc" : "asc"))
+                }
+                title={`Toggle sort direction (currently ${
+                  sortDir === "asc" ? "Ascending" : "Descending"
+                })`}
                 aria-label="Toggle sort direction"
               >
-                {sortDir === 'asc' ? '↑' : '↓'}
+                {sortDir === "asc" ? "↑" : "↓"}
               </button>
             </div>
           </div>
@@ -250,7 +293,7 @@ function EventsPage() {
               dateBottom = "--";
             }
 
-             return (
+            return (
               <Link
                 to={`/events/${event._id}`}
                 key={event._id || index}
@@ -284,7 +327,11 @@ function EventsPage() {
 
                   <div className="eventCard-meta">
                     <span className="eventCard-category">
-                      {(event.category || event.event_type || "EVENT").toUpperCase()}
+                      {(
+                        event.category ||
+                        event.event_type ||
+                        "EVENT"
+                      ).toUpperCase()}
                     </span>
                     <h3 className="eventCard-title" title={event.title}>
                       {event.title}

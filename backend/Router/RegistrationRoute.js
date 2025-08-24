@@ -212,6 +212,27 @@ router.get('/success/:tran_id', async (req, res) => {
     }
 })
 
+router.put('/unregister', async (req, res) => {
+    const { userId, eventId } = req.body;
+    try {
+        const registration = await Registration.findOne({ userId, eventId }).populate('eventId');
+        if (!registration) {
+            return res.status(404).json({ success: false, message: 'Registration not found' });
+        }
+        const registrationFee = registration.eventId.registration_fee;
+        await Registration.deleteOne({ userId, eventId });
+        let message;
+        if (registrationFee === 0) {
+            message = 'No registration fee to refund';
+        } else {
+            message = 'Registration fee will be refunded within 7-10 business days';
+        }
+        res.status(200).json({ success: true, message, registrationFee });
+    }
+    catch (error) {
+        res.status(500).json({ success: false, message: error.message });
+    }
+})
 
 
 module.exports = router

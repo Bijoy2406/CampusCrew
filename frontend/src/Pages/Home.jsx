@@ -47,8 +47,9 @@ const Home = () => {
     let ignore = false;
     (async () => {
       try {
+        let UserID = user && user._id ? user._id : "68ab36aab6a497f164b55d07";
         const { data } = await axios.get(
-          `${backend_link}/api/suggested_events/${user._id}`
+          `${backend_link}/api/suggested_events/${UserID}`
         );
         if (data.success) {
           console.log(data.recommended);

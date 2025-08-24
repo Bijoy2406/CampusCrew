@@ -1,4 +1,4 @@
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { FaRegCalendarAlt } from "react-icons/fa";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
@@ -8,7 +8,8 @@ import Loader from "../Components/loader_login"; // Import the Loader component
 import { useAuth } from "../contexts/AuthContext";
 // import { fetchWithToken } from "../Utils/authUtils";
 import PasswordChecklist from "react-password-checklist";
-import { showSuccessToast, showErrorToast, showWarningToast, showInfoToast } from "../utils/toastUtils";
+import { ToastContainer, toast } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 import axios from "axios";
 
 import cloud from "../assets/img/cloud.png";
@@ -35,7 +36,14 @@ function Login() {
   const [isPasswordValid, setIsPasswordValid] = useState(false); // Password validity state
   const [showPassword, setShowPassword] = useState(false);
   const navigate = useNavigate(); // Initialize useNavigate
-  const { login } = useAuth(); // Get login function from auth context
+  const { login, isAuthenticated } = useAuth(); // Get login function and auth state from auth context
+
+  // Redirect to homepage if user is already logged in
+  useEffect(() => {
+    if (isAuthenticated) {
+      navigate('/');
+    }
+  }, [isAuthenticated, navigate]);
 
   const togglePasswordVisibility = () => {
     setShowPassword(!showPassword);
@@ -73,39 +81,43 @@ function Login() {
       if (data.success) {
         const user = data.user;
         if (user && user.isAdmin && !user.isApprovedAdmin) {
-          showWarningToast("You are not approved as an admin yet.");
+          setLoading(false); // allow toast to show unobstructed
+          toast.warning("You are not approved as an admin yet.");
         } else {
           // Use the auth context login function
           await login(data.token, data.refreshtoken, user);
           localStorage.setItem("refresh-token", data.refreshtoken); // Store refresh token
-          showSuccessToast("Login successful! Welcome back!");
-          // Small delay to ensure state updates are completed
-          setTimeout(() => {
-            navigate("/"); // Navigate to home page
-          }, 100);
+          // Hide loader before showing toast so it's visible
+          setLoading(false);
+          toast.success("Login successful! Welcome back!", {
+            autoClose: 1000,
+            onClose: () => navigate("/"), // Navigate after toast closes
+          });
+          return; // Skip finally navigation logic
         }
       } else {
-        showErrorToast(data.errors || "Login failed. Please try again.");
+        toast.error(data.errors || "Login failed. Please try again.");
       }
     } catch (error) {
       if (error.response) {
         // Server responded with a status other than 2xx
         console.error("Server error:", error.response);
-        showErrorToast(
+        toast.error(
           error.response.data?.errors ||
             `HTTP error! status: ${error.response.status}`
         );
       } else if (error.request) {
         // Request was made but no response
         console.error("No response received:", error.request);
-        showErrorToast("No response from server. Please try again.");
+        toast.error("No response from server. Please try again.");
       } else {
         // Other errors
         console.error("Axios error:", error.message);
-        showErrorToast("An error occurred during login. Please try again.");
+        toast.error("An error occurred during login. Please try again.");
       }
     } finally {
-      setLoading(false); // Hide loader
+      // If we already turned loading off & scheduled navigation via toast, this is harmless
+      setLoading(false);
     }
   };
 
@@ -136,7 +148,7 @@ function Login() {
       }
     } catch (error) {
       console.error("Error refreshing access token:", error);
-      showErrorToast("Session expired, please log in again.");
+      toast.error("Session expired, please log in again.");
       localStorage.removeItem("auth-token");
       localStorage.removeItem("refresh-token");
       window.location.replace("/login");
@@ -145,10 +157,11 @@ function Login() {
 
   const signup = async () => {
     if (!isPasswordValid) {
-      showWarningToast("Password does not meet the criteria.");
+      toast.warning("Password does not meet the criteria.");
       return; // Exit the function if password criteria are not met
     }
     setLoading(true); // Show loader
+    toast.info("Creating your account...", { autoClose: 1500 });
 
     try {
       const response = await axios.post(`${backend_link}/api/signup`, {
@@ -157,22 +170,23 @@ function Login() {
         password: registerForm.password,
         dob: registerForm.dob, // Include DOB
         location: registerForm.location, // Include Location
-        isAdmin: registerForm.isAdmin || false,
+        isAdmin: false,
       });
 
       const data = response.data; // axios automatically parses JSON
 
       if (data.success) {
-        showSuccessToast(
-          "Signup successful! Please check your email for a verification link."
+        toast.success(
+          data.message ||
+            "Signup successful! Please check your email for a verification link."
         );
         setShowLogin(true); // Redirect to sign-in state
       } else {
-        showErrorToast(data.errors || "Signup failed");
+        toast.error(data.errors || "Signup failed");
       }
     } catch (error) {
       console.error("Failed to fetch during signup:", error);
-      showErrorToast(error.response?.data?.message || "Signup request failed");
+      toast.error(error.response?.data?.message || "Signup request failed");
     } finally {
       setLoading(false); // Hide loader
     }
@@ -180,10 +194,12 @@ function Login() {
 
   const handleLoginClick = () => {
     setShowLogin(true);
+    toast.info("Switched to Sign In", { autoClose: 1000 });
   };
 
   const handleRegisterClick = () => {
     setShowLogin(false);
+    toast.info("Switched to Sign Up", { autoClose: 1000 });
   };
 
   const handleDateChange = (date) => {
@@ -217,6 +233,14 @@ function Login() {
 
   return (
     <div className="login-background">
+      <ToastContainer
+        position="top-right"
+        newestOnTop
+        pauseOnFocusLoss
+        draggable
+        pauseOnHover
+        theme="colored"
+      />
       {loading && <Loader />} {/* Render the loader when loading is true */}
       <div className={`form-container ${loading ? "blurred" : ""}`}>
         {" "}
@@ -243,7 +267,7 @@ function Login() {
             <i className="bx bx-home"></i>
           </Link>
           <p className="featured-words">
-            Welcome To <span>Trendycart</span>
+            Welcome To <span>CampusCrew</span>
           </p>
         </div>
         <div className="col col-2">
@@ -426,7 +450,7 @@ function Login() {
             </div>
           </form>
         </div>
-        {!showLogin && (
+        {/* {!showLogin && (
           <div className="admin-box">
             <label className="admin-checkbox">
               <input
@@ -442,7 +466,7 @@ function Login() {
               </span>
             </label>
           </div>
-        )}
+        )} */}
       </div>
     </div>
   );

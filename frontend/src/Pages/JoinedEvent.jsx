@@ -13,7 +13,19 @@ function JoinedEvent() {
   const [error, setError] = useState("");
   const { user } = useAuth();
   const navigate = useNavigate();
+
+  // Check if user is admin and redirect to forbidden page
   useEffect(() => {
+    if (user && user.isAdmin) {
+      navigate('/forbidden');
+      return;
+    }
+  }, [user, navigate]);
+
+  useEffect(() => {
+    // Don't fetch data if user is admin (they will be redirected)
+    if (!user || user.isAdmin) return;
+    
     // alert(user._id);
     const fetchRegistrations = async () => {
       try {
@@ -33,7 +45,7 @@ function JoinedEvent() {
       }
     };
     fetchRegistrations();
-  }, [backend_link]);
+  }, [backend_link, user]);
 
   const formatDateParts = (isoDate) => {
     if (!isoDate) return { month: "—", day: "—" };
@@ -70,6 +82,12 @@ function JoinedEvent() {
     console.log(eventId);
     navigate(`/events/${eventId}`);
   };
+
+  // Don't render anything if user is admin (they will be redirected)
+  if (user && user.isAdmin) {
+    return null;
+  }
+
   return (
     <div className="je-page">
       <Header />
