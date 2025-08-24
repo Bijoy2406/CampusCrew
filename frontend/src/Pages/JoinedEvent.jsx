@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
-import "../CSS/upEventPage.css";
 import Header from "../Components/Header";
 import Footer from "../Components/Footer";
+import "../CSS/joinedEvents.css";  
 
 function JoinedEvent() {
-  const backend_link = import.meta.env.VITE_BACKEND_LINK; // Backend URL
+  const backend_link = import.meta.env.VITE_BACKEND_LINK;
   const [registrations, setRegistrations] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -28,33 +28,8 @@ function JoinedEvent() {
         setLoading(false);
       }
     };
-
     fetchRegistrations();
   }, [backend_link]);
-
-  if (loading) {
-    return (
-      <div className="eventsPage-container">
-        <Header />
-        <main className="eventsPage-main">
-          <p className="eventsPage-loading">Loading your events...</p>
-        </main>
-        <Footer />
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="eventsPage-container">
-        <Header />
-        <main className="eventsPage-main">
-          <p className="eventsPage-error">{error}</p>
-        </main>
-        <Footer />
-      </div>
-    );
-  }
 
   const formatDateParts = (isoDate) => {
     if (!isoDate) return { month: "—", day: "—" };
@@ -64,78 +39,150 @@ function JoinedEvent() {
     return { month, day };
   };
 
-  return (
-    <div className="eventsPage-container">
-      <Header />
+  if (loading) {
+    return (
+      <div className="je-page">
+        <Header />
+        <main className="je-main">
+          <p className="je-status">Loading your events...</p>
+        </main>
+        <Footer />
+      </div>
+    );
+  }
 
-      <main className="eventsPage-main">
+  if (error) {
+    return (
+      <div className="je-page">
+        <Header />
+        <main className="je-main">
+          <p className="je-status je-error">{error}</p>
+        </main>
+        <Footer />
+      </div>
+    );
+  }
+
+  return (
+    <div className="je-page">
+      <Header />
+      <main className="je-main">
         <h1 className="sr-only">My Joined Events</h1>
 
         {registrations.length === 0 && (
-          <p className="eventsPage-noEvents">
-            You haven't joined any events yet.
-          </p>
+          <p className="je-status">You haven't joined any events yet.</p>
         )}
 
         {registrations.length > 0 && (
-          <div className="eventCard-grid">
+          <div className="je-grid">
             {registrations.map((reg) => {
               const event = reg.eventId || {};
               const { month, day } = formatDateParts(event.date);
+
               return (
                 <article
                   key={reg._id}
-                  className="eventCard"
-                  aria-labelledby={`event-title-${reg._id}`}
+                  className="je-card"
+                  aria-labelledby={`je-title-${reg._id}`}
                 >
-                  {event.event_image ? (
-                    <img
-                      src={event.event_image}
-                      alt={event.title || "Event image"}
-                      className="eventCard-image"
-                      loading="lazy"
-                    />
-                  ) : (
-                    <div className="eventCard-image eventCard-image--placeholder">
-                      No Image
-                    </div>
-                  )}
+                  <div className="je-book">
+                    <div className="je-inner">
+                      {/* Inside content (visible after flip) */}
+                      <div className="je-content">
+                        <h2
+                          id={`je-title-${reg._id}`}
+                          className="je-event-title"
+                          title={event.title}
+                        >
+                          {event.title || "Untitled Event"}
+                        </h2>
+                        <p className="je-meta">
+                          <strong>Type:</strong>{" "}
+                          {(event.event_type || "EVENT").toUpperCase()}
+                        </p>
+                        <p className="je-meta">
+                          <strong>Location:</strong>{" "}
+                          {event.location || "Location TBA"}
+                        </p>
+                        <p className="je-meta">
+                          <strong>Prize:</strong>{" "}
+                          {event.prize_money
+                            ? `${event.prize_money} BDT`
+                            : "—"}
+                        </p>
+                        <p className="je-meta">
+                          <strong>Fee:</strong>{" "}
+                          {event.registration_fee
+                            ? `${event.registration_fee} BDT`
+                            : "—"}
+                        </p>
+                        <p className="je-meta">
+                          <strong>Deadline:</strong>{" "}
+                          {event.registration_deadline
+                            ? new Date(
+                                event.registration_deadline
+                              ).toLocaleDateString()
+                            : "—"}
+                        </p>
+                        <p className="je-meta">
+                          <strong>Payment:</strong>{" "}
+                          {reg.payment_status || "—"}
+                        </p>
+                        <p className="je-meta">
+                          <strong>Registered:</strong>{" "}
+                          {reg.is_registered ? "Yes" : "No"}
+                        </p>
+                      </div>
 
-                  <div className="eventCard-gradient" />
-
-                  <div className="eventCard-infoBar">
-                    <div className="eventCard-dateBlock">
-                      <span className="eventCard-dateTop">{month}</span>
-                      <span className="eventCard-dateBottom">{day}</span>
-                    </div>
-                    <div className="eventCard-divider" />
-                    <div className="eventCard-meta">
-                      <span className="eventCard-category">
-                        {(event.event_type || "EVENT").toUpperCase()}
-                      </span>
-                      <h2
-                        id={`event-title-${reg._id}`}
-                        className="eventCard-title"
-                        title={event.title}
+                      {/* Cover that flips */}
+                      <div
+                        className="je-cover"
+                        tabIndex={0}
+                        aria-label={`Open card for ${
+                          event.title || "event"
+                        }`}
                       >
-                        {event.title || "Untitled Event"}
-                      </h2>
-                      <p className="eventCard-location">
-                        {event.location || "Location TBA"}
-                      </p>
+                        {event.event_image ? (
+                          <img
+                            src={event.event_image}
+                            alt={
+                              event.title
+                                ? `${event.title} cover`
+                                : "Event cover"
+                            }
+                            className="je-cover-img"
+                            loading="lazy"
+                          />
+                        ) : (
+                          <div className="je-cover-img je-placeholder">
+                            <span>No Image</span>
+                          </div>
+                        )}
+
+                        <div className="je-cover-overlay" aria-hidden="true">
+                          <div className="je-date-block">
+                            <span className="je-month">{month}</span>
+                            <span className="je-day">{day}</span>
+                          </div>
+                          <div
+                            className="je-cover-title"
+                            title={event.title || "Untitled Event"}
+                          >
+                            {event.title || "Untitled Event"}
+                          </div>
+                          <div className="je-hint">Hover / Focus</div>
+                        </div>
+                      </div>
                     </div>
                   </div>
 
-                  {/* Extra details for screen readers only */}
+                  {/* Screen reader fallback details */}
                   <div className="sr-only">
-                    Prize: {event.prize_money} BDT. Fee: {event.registration_fee} BDT.
-                    Registration deadline:{" "}
-                    {event.registration_deadline
-                      ? new Date(
-                          event.registration_deadline
-                        ).toLocaleDateString()
-                      : "—"}
-                    . Payment status: {reg.payment_status}. Registered:{" "}
+                    Event: {event.title || "Untitled Event"}. Date: {month} {day}
+                    . Location: {event.location || "Location TBA"}. Prize:{" "}
+                    {event.prize_money || "—"} BDT. Fee:{" "}
+                    {event.registration_fee || "—"} BDT. Payment status:{" "}
+                    {reg.payment_status}. Registered:{" "}
                     {reg.is_registered ? "Yes" : "No"}.
                   </div>
                 </article>
@@ -144,7 +191,6 @@ function JoinedEvent() {
           </div>
         )}
       </main>
-
       <Footer />
     </div>
   );
