@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import { Link } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
 
@@ -7,10 +7,73 @@ import { useAuth } from "../contexts/AuthContext";
 const HeroBanner = () => {
   const { isAuthenticated } = useAuth();
   const [mounted, setMounted] = useState(false);
+  const hasCountedRef = useRef(false);
+  const statsRef = useRef(null);
 
   useEffect(() => {
     setMounted(true);
-  // No rotating words now; could add future ambient animation hooks here.
+    // Observe animated elements inside hero for scroll-in effects
+    const els = document.querySelectorAll('.hero-3d-content .anim-on-scroll');
+    const io = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          entry.target.classList.add('in-view');
+        }
+      });
+    }, { threshold: 0.2 });
+    els.forEach(el => io.observe(el));
+
+    // Count-up stats when visible
+    const statsObserver = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting && !hasCountedRef.current) {
+          hasCountedRef.current = true;
+          const numbers = entry.target.querySelectorAll('[data-count]');
+          numbers.forEach(span => {
+            const target = parseInt(span.getAttribute('data-count'), 10);
+            if (isNaN(target)) return;
+            const duration = 1600;
+            const startTime = performance.now();
+            const startVal = 0;
+            const step = (now) => {
+              const prog = Math.min(1, (now - startTime)/duration);
+              const eased = prog < 0.5 ? 2*prog*prog : -1 + (4 - 2*prog)*prog; // easeInOut
+              const val = Math.floor(startVal + (target - startVal)*eased);
+              span.textContent = val.toLocaleString();
+              if (prog < 1) requestAnimationFrame(step); else span.textContent = target.toLocaleString();
+            };
+            requestAnimationFrame(step);
+          });
+          statsObserver.disconnect();
+        }
+      });
+    }, { threshold: 0.4 });
+    if (statsRef.current) statsObserver.observe(statsRef.current);
+
+    // Parallax for planet & background
+    const handleScroll = () => {
+      const hero = document.querySelector('.hero-3d-wrapper');
+      if (!hero) return;
+      const rect = hero.getBoundingClientRect();
+      const windowH = window.innerHeight;
+      if (rect.bottom < 0 || rect.top > windowH) return; // skip if out of view
+      const progress = Math.min(1, Math.max(0, (windowH - rect.top) / (windowH + rect.height)));
+      const planet = hero.querySelector('.center-core.large-planet');
+      if (planet) {
+        planet.style.transform = `translate(-50%, -50%) scale(${1 + progress*0.05}) rotate(${progress*25}deg)`;
+      }
+      const content = hero.querySelector('.hero-3d-content');
+      if (content) {
+        content.style.transform = `translateY(${progress * -20}px)`;
+      }
+    };
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    handleScroll();
+
+    return () => {
+      io.disconnect();
+      window.removeEventListener('scroll', handleScroll);
+    };
   }, []);
 
   return (
@@ -23,24 +86,24 @@ const HeroBanner = () => {
         </div>
       </div>
       <div className="hero-3d-content">
-        <p className="eyebrow">Campus Event OS</p>
-        <h1 className="headline">
-          Where <span className="gradient-text">Ideas</span> Become <span className="outline-text">Impact</span>
+        <p className="eyebrow anim-on-scroll fade-down-delay">Campus Event OS</p>
+        <h1 className="headline anim-on-scroll slide-up-stagger">
+          <span className="word-anim" style={{"--w-delay":"0ms"}}>Where</span> <span className="gradient-text word-anim" style={{"--w-delay":"80ms"}}>Ideas</span> <span className="word-anim" style={{"--w-delay":"160ms"}}>Become</span> <span className="outline-text word-anim" style={{"--w-delay":"240ms"}}>Impact</span>
         </h1>
-        <p className="tagline">
+        <p className="tagline anim-on-scroll fade-up-delay">
           Plan, promote & analyze student events in one intuitive platform. Boost engagement, streamline logistics,
           and grow a vibrant academic innovation culture.
         </p>
-        <div className="cta-row">
+        <div className="cta-row anim-on-scroll zoom-in-delay">
           {!isAuthenticated && (
-            <Link to="/login" className="button primary large">Get Started Free</Link>
+            <Link to="/login" className="button primary large pulse-hover">Get Started Free</Link>
           )}
-          <Link to="/about" className="button ghost large">How It Works</Link>
+          <Link to="/about" className="button ghost large pulse-hover">How It Works</Link>
         </div>
-        <ul className="stats">
-          <li><strong>2K+</strong><span> Active Students</span></li>
-          <li><strong>150+</strong><span> Events Hosted</span></li>
-          <li><strong>40%</strong><span> Higher Attendance</span></li>
+        <ul className="stats anim-on-scroll" ref={statsRef}>
+          <li><strong data-count="2000">0</strong><span> Active Students</span></li>
+          <li><strong data-count="150">0</strong><span> Events Hosted</span></li>
+          <li><strong data-count="40">0</strong><span> Higher Attendance %</span></li>
         </ul>
       </div>
       <div className="scroll-hint" aria-hidden>

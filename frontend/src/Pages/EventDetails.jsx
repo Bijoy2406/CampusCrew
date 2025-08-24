@@ -249,6 +249,10 @@ function EventDetails() {
                   <h4>Created</h4>
                   <p>{formatDateTime(event.createdAt)}</p>
                 </div>
+                <div className="ed-metaBox">
+                  <h4>Category</h4>
+                  <p>{event.category}</p>
+                </div>
               </section>
 
               <section className="ed-description">
