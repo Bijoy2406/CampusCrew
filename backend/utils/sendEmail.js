@@ -3,24 +3,28 @@ require('dotenv').config()
 module.exports = async (email, subject, text) => {
     try {
         const transporter = nodemailer.createTransport({
-            host: "smtp.gmail.com",
-            service: "gmail",
-            port: 587,
-            secure: false,
+            host: process.env.SMTP_HOST || "smtp.gmail.com",
+            port: parseInt(process.env.SMTP_PORT) || 465,
+            secure: process.env.SMTP_SECURE === 'true' || true, // true for port 465, false for other ports
             auth: {
-                user: process.env.USER_MAIL,
-                pass: process.env.PASSWORD,
+                user: process.env.SMTP_USER,
+                pass: process.env.SMTP_PASS,
+            },
+            tls: {
+                // Do not fail on invalid certs for development
+                rejectUnauthorized: false
             }
         })
         await transporter.sendMail({
-            from: process.env.USER_MAIL,
+            from: process.env.SMTP_USER,
             to: email,
             subject: subject,
             text: text
 
         })
+        console.log(`Email sent successfully to: ${email}`)
     } catch (error) {
-        console.log("Could not send Messege")
+        console.log("Could not send Message")
         console.log(error)
 
     }

@@ -1,17 +1,15 @@
 /* Loader.css */
 
-.modal {
-  position: fixed; /* Stay in place */
-  z-index: 1; /* Sit on top */
-  left: 0;
-  top: 0;
-  width: 100%; /* Full width */
-  height: 100%; /* Full height */
+.loader-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 10000; /* Above other modals */
   display: flex;
   justify-content: center;
   align-items: center;
-  background-color: rgba(0, 0, 0, 0.4); /* Black with opacity */
-  
+  background-color: rgba(0, 0, 0, 0.45);
+  pointer-events: all;
+  backdrop-filter: blur(2px);
 }
 
 .loader-svg {
