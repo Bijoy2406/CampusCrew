@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import Header from "../Components/Header";
 import Footer from "../Components/Footer";
+import Loader from "../Components/loader";
 import "../CSS/dashboard.css";
 import "../CSS/upEventPage.css"; // reuse existing search bar / fx styles
 import { useAuth } from "../contexts/AuthContext";
@@ -208,6 +209,7 @@ function Dashboard() {
         fontFamily: "Silevena",
       }}
     >
+      {loading && <Loader color={document.documentElement.getAttribute("data-theme") === "dark" ? "#ffffff" : "#000000"} />}
       <Header />
       <main
         className="layout-container"

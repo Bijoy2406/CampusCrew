@@ -4,11 +4,13 @@ import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import { useAuth } from '../contexts/AuthContext';
 import '../CSS/ForgotPassword.css';
+import Loader from "../Components/loader";
 
 function ForgotPassword() {
   const backend_link = import.meta.env.VITE_BACKEND_LINK;
   const [email, setEmail] = useState('');
   const [loading, setLoading] = useState(false);
+  const [pageLoading, setPageLoading] = useState(true);
   const navigate = useNavigate();
   const { isAuthenticated } = useAuth();
 
@@ -18,6 +20,11 @@ function ForgotPassword() {
       navigate('/');
     }
   }, [isAuthenticated, navigate]);
+
+  useEffect(() => {
+    const timer = setTimeout(() => setPageLoading(false), 800);
+    return () => clearTimeout(timer);
+  }, []);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -52,6 +59,7 @@ function ForgotPassword() {
 
   return (
     <div className="forgot-password-container">
+      {pageLoading && <Loader color={document.documentElement.getAttribute("data-theme") === "dark" ? "#ffffff" : "#000000"} />}
       <form className="forgot-password-form" onSubmit={handleSubmit}>
         <h2>Forgot Password</h2>
         <p className="forgot-description">

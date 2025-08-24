@@ -4,6 +4,7 @@ const router = express.Router()
 const Registration = require('../models/RegistrationModel')
 const Events = require('../models/EventModel')
 const { generateCertificate, buildCertificateSVG } = require('../utils/certificateGenerator');
+const { isEventExpired } = require('../utils/eventCleanup');
 const jwt = require('jsonwebtoken');
 const { v4: uuidv4 } = require('uuid');
 const SSLCommerzPayment = require('sslcommerz-lts');
@@ -27,6 +28,11 @@ router.post('/register-event', async (req, res) => {
         const event = await Events.findById(registrationData.eventId);
         if (!event) {
             return res.status(404).json({ success: false, message: 'Event not found' });
+        }
+
+        // Check if event is expired
+        if (isEventExpired(event.date)) {
+            return res.status(400).json({ success: false, message: 'Cannot register for expired event' });
         }
 
 
@@ -153,7 +159,14 @@ router.get('/registrations/user/:id', async (req, res) => {
         if (!registration || registration.length === 0) {
             return res.status(404).json({ success: false, message: 'Registered events not found', userId: id });
         }
-        res.status(200).json({ success: true, registration })
+        
+        // Filter out registrations for expired events
+        const now = new Date();
+        const activeRegistrations = registration.filter(reg => {
+            return reg.eventId && new Date(reg.eventId.date) >= now;
+        });
+        
+        res.status(200).json({ success: true, registration: activeRegistrations })
     } catch (error) {
         res.status(500).json({ success: false, message: error.message });
     }

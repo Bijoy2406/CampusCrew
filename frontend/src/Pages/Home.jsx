@@ -15,6 +15,7 @@ import "../CSS/home.css";
 import HeroBanner from "../Components/HeroBanner";
 import Footer from "../Components/Footer";
 import Header from "../Components/Header";
+import Loader from "../Components/loader";
 
 const Home = () => {
   const { isAuthenticated, logout, user } = useAuth();
@@ -25,6 +26,7 @@ const Home = () => {
   const [evError, setEvError] = useState("");
   const [currentIdx, setCurrentIdx] = useState(0);
   const [isPaused, setIsPaused] = useState(false); // pause on hover/focus
+  const [loading, setLoading] = useState(true);
 
   // Basic scroll reveal (CSS class toggling)
   useEffect(() => {
@@ -58,7 +60,10 @@ const Home = () => {
       } catch (e) {
         if (!ignore) setEvError("Failed to load events");
       } finally {
-        if (!ignore) setEvLoading(false);
+        if (!ignore) {
+          setEvLoading(false);
+          setLoading(false);
+        }
       }
     })();
     return () => {
@@ -101,6 +106,7 @@ const Home = () => {
 
   return (
     <div className="home-container">
+      {loading && <Loader color={document.documentElement.getAttribute("data-theme") === "dark" ? "#ffffff" : "#000000"} />}
       <Header />
 
       <main>

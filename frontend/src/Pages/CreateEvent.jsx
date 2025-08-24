@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import Header from "../Components/Header";
 import Footer from "../Components/Footer";
+import Loader from "../Components/loader";
 
 import { toast, ToastContainer } from "react-toastify";
 import {
@@ -10,6 +11,7 @@ import {
   showInfoToast,
 } from "../utils/toastUtils";
 import { apiService } from "../utils/apiService";
+import { clearEventCaches } from "../utils/cacheUtils";
 import { useAuth } from "../contexts/AuthContext";
 import "react-toastify/dist/ReactToastify.css";
 
@@ -19,6 +21,7 @@ import { useNavigate } from "react-router-dom";
 function CreateEvent() {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const [loading, setLoading] = useState(true);
   const [event, setEvent] = useState({
     title: "",
     description: "",
@@ -35,6 +38,11 @@ function CreateEvent() {
   });
 
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  useEffect(() => {
+    const timer = setTimeout(() => setLoading(false), 800);
+    return () => clearTimeout(timer);
+  }, []);
 
   // Client side guard
   useEffect(() => {
@@ -174,6 +182,9 @@ function CreateEvent() {
           `Event "${event.title}" has been created successfully!`
         );
 
+        // Clear events cache to ensure new event shows up in upcoming events
+        clearEventCaches();
+
         // Reset form
         setEvent({
           title: "",
@@ -191,8 +202,6 @@ function CreateEvent() {
         // Clear file input
         const fileInput = document.querySelector('input[type="file"]');
         if (fileInput) fileInput.value = "";
-
-        showInfoToast("Event is now live and ready for registrations!");
       } else {
         showErrorToast(response.data.message || "Failed to create event");
       }
@@ -209,6 +218,7 @@ function CreateEvent() {
 
   return (
     <div className="ce-wrapper" style={{ fontFamily: "Silevena" }}>
+      {loading && <Loader color={document.documentElement.getAttribute("data-theme") === "dark" ? "#ffffff" : "#000000"} />}
       <Header />
       {!user ? (
         <div className="ce-form-container">
