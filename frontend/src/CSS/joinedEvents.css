@@ -33,36 +33,41 @@
 /* Grid */
 .je-grid {
   display: grid;
-  gap: 34px;
-  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 40px; /* More breathing room */
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); /* Bigger min size */
   justify-items: center;
 }
 
 @media (max-width: 560px) {
   .je-grid {
-    gap: 26px;
-    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    gap: 24px;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); /* Bigger on mobile too */
   }
 }
 
 /* Card / Book */
 .je-card {
   position: relative;
-  width: 240px;
-  height: 320px;
+  width: 100%; 
+  aspect-ratio: 3 / 2; /* Wider cards */
   perspective: 2000px;
   display: flex;
   align-items: center;
   justify-content: center;
+  transition: transform 0.25s ease;
 }
 
 @media (max-width: 560px) {
   .je-card {
-    width: 180px;
-    height: 260px;
+    aspect-ratio: 3 / 4; /* Taller cards on small screens */
   }
 }
 
+.je-card:hover { 
+  transform: translateY(-2px);
+}
+
+/* Book container */
 .je-book {
   width: 100%;
   height: 100%;
@@ -81,7 +86,8 @@
   transition: background .4s, box-shadow .4s, border-color .4s;
 }
 
-/* Inside content (hidden by cover) */
+/* Inside content */
+/* Inside content */
 .je-content {
   position: absolute;
   inset: 0;
@@ -89,12 +95,25 @@
   display: flex;
   flex-direction: column;
   gap: 6px;
-  background: linear-gradient(135deg,var(--bg-card,#ffffff) 0%, var(--bg-secondary,#ececec) 100%);
+  background: linear-gradient(
+    135deg,
+    var(--bg-card, #ffffff) 0%, 
+    var(--bg-secondary, #ececec) 100%
+  );
   border-radius: 12px;
   z-index: 1;
   backface-visibility: hidden;
   transform-style: preserve-3d;
   transition: background .4s;
+  
+  /* 👇 Added for right alignment */
+  text-align: right;
+  align-items: flex-end; /* Moves flex children to the right */
+}
+
+.je-event-title, 
+.je-meta {
+  text-align: right; /* Ensures text inside is also right-aligned */
 }
 
 .je-event-title {
@@ -118,7 +137,7 @@
   }
 }
 
-/* Cover (front) */
+/* Cover */
 .je-cover {
   position: absolute;
   inset: 0;
@@ -152,9 +171,27 @@
   display: block;
 }
 
-.je-placeholder { background:repeating-linear-gradient(135deg,var(--bg-secondary,#b8b8b8),var(--bg-secondary,#b8b8b8) 10px,var(--bg-tertiary,#c8c8c8) 10px,var(--bg-tertiary,#c8c8c8) 20px); color:var(--text-secondary,#222); font-size:.9rem; font-weight:600; display:flex; justify-content:center; align-items:center; }
+.je-placeholder {
+  background: repeating-linear-gradient(135deg,var(--bg-secondary,#b8b8b8),var(--bg-secondary,#b8b8b8) 10px,var(--bg-tertiary,#c8c8c8) 10px,var(--bg-tertiary,#c8c8c8) 20px);
+  color: var(--text-secondary,#222);
+  font-size: .9rem;
+  font-weight: 600;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
 
-.je-cover-overlay { position:absolute; inset:0; background:linear-gradient(180deg,rgba(0,0,0,0.25) 0%,rgba(0,0,0,0.7) 100%); color:#fff; display:flex; flex-direction:column; padding:14px 14px 12px; gap:8px; border-radius:inherit; }
+.je-cover-overlay { 
+  position:absolute; 
+  inset:0; 
+  background:linear-gradient(180deg,rgba(0,0,0,0.25) 0%,rgba(0,0,0,0.7) 100%);
+  color:#fff; 
+  display:flex; 
+  flex-direction:column; 
+  padding:14px 14px 12px; 
+  gap:8px; 
+  border-radius:inherit; 
+}
 
 .je-date-block {
   display: flex;
@@ -183,8 +220,6 @@
 
 .je-hint { font-size:0.6rem; opacity:0.75; letter-spacing:0.5px; }
 
-.je-card:hover { transform:translateY(-2px); transition:transform 0.25s; }
-
 /* Screen reader utility */
 .sr-only {
   position: absolute;
@@ -197,8 +232,7 @@
   border: 0;
 }
 
-
-/* High contrast support */
+/* High contrast */
 @media (prefers-contrast: more){
   .je-inner, .je-cover { outline:2px solid var(--border-medium,#555); }
 }

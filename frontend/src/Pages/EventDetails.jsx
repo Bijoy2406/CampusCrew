@@ -104,10 +104,18 @@ function EventDetails() {
     setRegError("");
     try {
       if (event.registration_fee === 0) {
-        const { data } = await axios.post(`${backend}/api/register-event`, {
-          userId: user._id,
-          eventId: event._id,
-        });
+        try {
+          const { data } = await axios.post(`${backend}/api/register-event`, {
+            userId: user._id,
+            eventId: event._id,
+          });
+          if (data.success) {
+            showSuccessToast("Registration completed.");
+            setIsRegistered(true);
+          }
+        } catch (error) {
+          console.log(error.message);
+        }
       } else {
         console.log(event.registration_fee);
         console.log(typeof event.registration_fee);

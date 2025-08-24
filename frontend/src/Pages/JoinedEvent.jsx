@@ -2,19 +2,23 @@ import React, { useState, useEffect } from "react";
 import axios from "axios";
 import Header from "../Components/Header";
 import Footer from "../Components/Footer";
-import "../CSS/joinedEvents.css";  
+import "../CSS/joinedEvents.css";
+import { useAuth } from "../contexts/AuthContext";
+import { useNavigate } from "react-router-dom";
 
 function JoinedEvent() {
   const backend_link = import.meta.env.VITE_BACKEND_LINK;
   const [registrations, setRegistrations] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-
+  const { user } = useAuth();
+  const navigate = useNavigate();
   useEffect(() => {
+    // alert(user._id);
     const fetchRegistrations = async () => {
       try {
         const response = await axios.get(
-          `${backend_link}/api/registrations/user/68a95ccf82873d9ae915dee9`
+          `${backend_link}/api/registrations/user/${user._id}`
         );
         if (response.data.success) {
           setRegistrations(response.data.registration);
@@ -62,7 +66,10 @@ function JoinedEvent() {
       </div>
     );
   }
-
+  const eventDetails = async (eventId) => {
+    console.log(eventId);
+    navigate(`/events/${eventId}`);
+  };
   return (
     <div className="je-page">
       <Header />
@@ -75,119 +82,113 @@ function JoinedEvent() {
 
         {registrations.length > 0 && (
           <div className="je-grid">
-            {registrations.map((reg) => {
-              const event = reg.eventId || {};
-              const { month, day } = formatDateParts(event.date);
+            {registrations
+              .slice() // make a copy so we don’t mutate state
+              .sort((a, b) => {
+                const dateA = new Date(a?.eventId?.date || 0);
+                const dateB = new Date(b?.eventId?.date || 0);
+                return dateA - dateB; // Ascending: earliest first
+              })
+              .map((reg) => {
+                const event = reg.eventId || {};
+                const { month, day } = formatDateParts(event.date);
 
-              return (
-                <article
-                  key={reg._id}
-                  className="je-card"
-                  aria-labelledby={`je-title-${reg._id}`}
-                >
-                  <div className="je-book">
-                    <div className="je-inner">
-                      {/* Inside content (visible after flip) */}
-                      <div className="je-content">
-                        <h2
-                          id={`je-title-${reg._id}`}
-                          className="je-event-title"
-                          title={event.title}
-                        >
-                          {event.title || "Untitled Event"}
-                        </h2>
-                        <p className="je-meta">
-                          <strong>Type:</strong>{" "}
-                          {(event.event_type || "EVENT").toUpperCase()}
-                        </p>
-                        <p className="je-meta">
-                          <strong>Location:</strong>{" "}
-                          {event.location || "Location TBA"}
-                        </p>
-                        <p className="je-meta">
-                          <strong>Prize:</strong>{" "}
-                          {event.prize_money
-                            ? `${event.prize_money} BDT`
-                            : "—"}
-                        </p>
-                        <p className="je-meta">
-                          <strong>Fee:</strong>{" "}
-                          {event.registration_fee
-                            ? `${event.registration_fee} BDT`
-                            : "—"}
-                        </p>
-                        <p className="je-meta">
-                          <strong>Deadline:</strong>{" "}
-                          {event.registration_deadline
-                            ? new Date(
-                                event.registration_deadline
-                              ).toLocaleDateString()
-                            : "—"}
-                        </p>
-                        <p className="je-meta">
-                          <strong>Payment:</strong>{" "}
-                          {reg.payment_status || "—"}
-                        </p>
-                        <p className="je-meta">
-                          <strong>Registered:</strong>{" "}
-                          {reg.is_registered ? "Yes" : "No"}
-                        </p>
-                      </div>
-
-                      {/* Cover that flips */}
-                      <div
-                        className="je-cover"
-                        tabIndex={0}
-                        aria-label={`Open card for ${
-                          event.title || "event"
-                        }`}
-                      >
-                        {event.event_image ? (
-                          <img
-                            src={event.event_image}
-                            alt={
-                              event.title
-                                ? `${event.title} cover`
-                                : "Event cover"
-                            }
-                            className="je-cover-img"
-                            loading="lazy"
-                          />
-                        ) : (
-                          <div className="je-cover-img je-placeholder">
-                            <span>No Image</span>
-                          </div>
-                        )}
-
-                        <div className="je-cover-overlay" aria-hidden="true">
-                          <div className="je-date-block">
-                            <span className="je-month">{month}</span>
-                            <span className="je-day">{day}</span>
-                          </div>
-                          <div
-                            className="je-cover-title"
-                            title={event.title || "Untitled Event"}
+                return (
+                  <article
+                    key={reg._id}
+                    className="je-card"
+                    aria-labelledby={`je-title-${reg._id}`}
+                    onClick={() => eventDetails(event._id)}
+                  >
+                    <div className="je-book">
+                      <div className="je-inner">
+                        {/* Inside content (visible after flip) */}
+                        <div className="je-content">
+                          <h2
+                            id={`je-title-${reg._id}`}
+                            className="je-event-title"
+                            title={event.title}
                           >
                             {event.title || "Untitled Event"}
+                          </h2>
+                          <p className="je-meta">
+                            <strong>Location:</strong>{" "}
+                            {event.location || "Location TBA"}
+                          </p>
+                          <p className="je-meta">
+                            <strong>Prize:</strong>{" "}
+                            {event.prize_money
+                              ? `${event.prize_money} BDT`
+                              : "—"}
+                          </p>
+                          <p className="je-meta">
+                            <strong>Fee:</strong>{" "}
+                            {event.registration_fee
+                              ? `${event.registration_fee} BDT`
+                              : "—"}
+                          </p>
+                          <p className="je-meta">
+                            <strong>Payment:</strong>{" "}
+                            {reg.payment_status || "—"}
+                          </p>
+                          <p className="je-meta">
+                            <strong>Registered:</strong>{" "}
+                            {reg.is_registered ? "Yes" : "No"}
+                          </p>
+                        </div>
+
+                        {/* Cover */}
+                        <div
+                          className="je-cover"
+                          tabIndex={0}
+                          aria-label={`Open card for ${event.title || "event"}`}
+                        >
+                          {event.event_image ? (
+                            <img
+                              src={event.event_image}
+                              alt={
+                                event.title
+                                  ? `${event.title} cover`
+                                  : "Event cover"
+                              }
+                              className="je-cover-img"
+                              loading="lazy"
+                            />
+                          ) : (
+                            <div className="je-cover-img je-placeholder">
+                              <span>No Image</span>
+                            </div>
+                          )}
+
+                          <div className="je-cover-overlay" aria-hidden="true">
+                            <div className="je-date-block">
+                              <span className="je-month">{month}</span>
+                              <span className="je-day">{day}</span>
+                            </div>
+                            <div
+                              className="je-cover-title"
+                              title={event.title || "Untitled Event"}
+                            >
+                              {event.title || "Untitled Event"}
+                            </div>
+                            <div className="je-hint">{event.catagory}</div>
                           </div>
-                          <div className="je-hint">Hover / Focus</div>
                         </div>
                       </div>
                     </div>
-                  </div>
 
-                  {/* Screen reader fallback details */}
-                  <div className="sr-only">
-                    Event: {event.title || "Untitled Event"}. Date: {month} {day}
-                    . Location: {event.location || "Location TBA"}. Prize:{" "}
-                    {event.prize_money || "—"} BDT. Fee:{" "}
-                    {event.registration_fee || "—"} BDT. Payment status:{" "}
-                    {reg.payment_status}. Registered:{" "}
-                    {reg.is_registered ? "Yes" : "No"}.
-                  </div>
-                </article>
-              );
-            })}
+                    {/* Screen reader fallback */}
+                    <div className="sr-only">
+                      Event: {event.title || "Untitled Event"}. Date: {month}{" "}
+                      {day}. Location: {event.location || "Location TBA"}.
+                      Prize: {event.prize_money || "—"} BDT. Fee:{" "}
+                      {event.registration_fee || "—"} BDT. Payment status:{" "}
+                      {reg.payment_status}. Registered:{" "}
+                      {reg.is_registered ? "Yes" : "No"}.
+                    </div>
+                  </article>
+                );
+              })}
           </div>
         )}
       </main>
