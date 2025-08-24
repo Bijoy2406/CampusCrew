@@ -1,25 +1,26 @@
-import React, { useEffect, useState, useCallback } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
-import Header from '../Components/Header';
-import Footer from '../Components/Footer';
-import { apiService } from '../utils/apiService';
-import { useAuth } from '../contexts/AuthContext';
-import { ToastContainer } from 'react-toastify';
-import { showSuccessToast } from '../utils/toastUtils';
-import Loader from '../Components/loader_login';
-import '../CSS/upEventPage.css';
-import '../CSS/eventDetails.css';
+import React, { useEffect, useState, useCallback } from "react";
+import { useParams, useNavigate } from "react-router-dom";
+import Header from "../Components/Header";
+import Footer from "../Components/Footer";
+import { apiService } from "../utils/apiService";
+import { useAuth } from "../contexts/AuthContext";
+import { ToastContainer } from "react-toastify";
+import { showSuccessToast } from "../utils/toastUtils";
+import Loader from "../Components/loader_login";
+import "../CSS/upEventPage.css";
+import "../CSS/eventDetails.css";
+import axios from "axios";
 
 // Helper to format date/time elegantly
 const formatDateTime = (iso) => {
-  if (!iso) return '—';
+  if (!iso) return "—";
   const d = new Date(iso);
   return d.toLocaleString(undefined, {
-    weekday: 'short',
-    month: 'short',
-    day: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit'
+    weekday: "short",
+    month: "short",
+    day: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
   });
 };
 
@@ -31,78 +32,67 @@ function EventDetails() {
   const { user, isAuthenticated } = useAuth();
   const [event, setEvent] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
-  const [registering, setRegistering] = useState(false);
+  const [error, setError] = useState("");
   const [isRegistered, setIsRegistered] = useState(false);
-  const [regError, setRegError] = useState('');
+  const [regError, setRegError] = useState("");
+  const backend = import.meta.env.VITE_BACKEND_LINK;
   // editing handled on separate page now
-
-  const checkRegistration = useCallback(async (userId, eventId) => {
-    if (!userId || !eventId) return;
+  const eventID = useParams(id);
+  const getRegistration = async () => {
+    const eventId = eventID.id;
     try {
-      const { data } = await apiService.getUserRegistrations(userId);
+      const { data } = await axios.get(
+        `${backend}/api/event/${eventId}/user/${user._id}`
+      );
       if (data.success) {
-        const match = data.registration.find(r => {
-          const eid = r.eventId && (r.eventId._id || r.eventId);
-            return eid === eventId;
-        });
-        if (match) {
-          // Only treat as registered if backend set is_registered true
-          setIsRegistered(match.is_registered === true);
-          if (match.is_registered !== true) {
-            setRegError('Registration pending. Complete remaining steps.');
-          }
-        } else {
-          setIsRegistered(false);
-        }
+        setIsRegistered(true);
       }
-    } catch (e) {
-      // silent fail
+    } catch (error) {
+      console.log(error);
     }
-  }, []);
-
+  };
   useEffect(() => {
     const load = async () => {
       try {
         const { data } = await apiService.getEvent(id);
         if (data.success) {
           setEvent(data.event);
-          if (user?._id) {
-            checkRegistration(user._id, data.event._id);
-          }
+          getRegistration();
         } else {
-          setError(data.message || 'Failed to load event');
+          setError(data.message || "Failed to load event");
         }
       } catch (e) {
-        setError(e.response?.data?.message || 'Error loading event');
+        setError(e.response?.data?.message || "Error loading event");
       } finally {
         setLoading(false);
       }
     };
     load();
-  }, [id, user, checkRegistration]);
+  }, []);
 
-  const openEdit = () => { if (event) navigate(`/events/${event._id}/edit`); };
+  const openEdit = () => {
+    if (event) navigate(`/events/${event._id}/edit`);
+  };
 
   const deleteEvent = async () => {
     if (!event) return;
-    if (!confirm('Delete this event?')) return;
+    if (!confirm("Delete this event?")) return;
     try {
       const { data } = await apiService.deleteEvent(event._id);
       if (data.success) {
-        showSuccessToast('Event deleted');
-        navigate('/upcoming-events');
+        showSuccessToast("Event deleted");
+        navigate("/upcoming-events");
       } else {
-        setRegError(data.message || 'Delete failed');
+        setRegError(data.message || "Delete failed");
       }
     } catch (err) {
-      setRegError(err.response?.data?.message || 'Delete failed');
+      setRegError(err.response?.data?.message || "Delete failed");
     }
   };
 
   const handleRegister = async () => {
     if (!isAuthenticated) {
-      navigate('/login');
+      navigate("/login");
       return;
     }
     if (!event) return;
@@ -110,34 +100,51 @@ function EventDetails() {
       return;
     }
     if (new Date(event.registration_deadline) < new Date()) return;
-    setRegistering(true);
-    setRegError('');
+
+    setRegError("");
     try {
-      const payload = {
-        userId: user._id,
-        eventId: event._id,
-        payment_status: event.registration_fee > 0 ? 'pending' : 'completed',
-        is_registered: event.registration_fee === 0
-      };
-      const { data } = await apiService.registerForEvent(payload);
-      if (data.success) {
-        setIsRegistered(true);
-        showSuccessToast('Registered successfully');
+      if (event.registration_fee === 0) {
+        const { data } = await axios.post(`${backend}/api/register-event`, {
+          userId: user._id,
+          eventId: event._id,
+        });
       } else {
-        setRegError(data.message || 'Failed to register');
+        console.log(event.registration_fee);
+        console.log(typeof event.registration_fee);
+        // alert("Bkash");
+        try {
+          const { data } = await axios.post(
+            `${backend}/api/bkash/pay`,
+            {
+              amount: event.registration_fee,
+              eventId: event._id,
+              userId: user._id,
+            },
+            { withCredentials: true }
+          );
+          window.location.href = data.bkashURL;
+          console.log(data);
+        } catch (error) {
+          console.log(error);
+        }
       }
+
+      // window.location.href = data.url;
     } catch (e) {
-      setRegError(e.response?.data?.message || 'Registration failed');
+      setRegError(e.response?.data?.message || "Registration failed");
     } finally {
-      setRegistering(false);
     }
   };
 
   return (
-    <div className="eventDetails-wrapper" style={{ fontFamily: 'Silevena' }}>
+    <div className="eventDetails-wrapper" style={{ fontFamily: "Silevena" }}>
       <Header />
       <main className="eventDetails-main">
-        <button className="ed-backBtn" onClick={() => navigate(-1)} aria-label="Back to events">
+        <button
+          className="ed-backBtn"
+          onClick={() => navigate(-1)}
+          aria-label="Back to events"
+        >
           <span className="ed-backIcon">←</span> Back
         </button>
 
@@ -146,7 +153,11 @@ function EventDetails() {
             <div className="ed-imageSkeleton shimmer" />
             <div className="ed-contentSkeleton">
               {shimmerLines.map((_, i) => (
-                <div key={i} className="ed-line shimmer" style={{ width: `${80 - i * 7}%` }} />
+                <div
+                  key={i}
+                  className="ed-line shimmer"
+                  style={{ width: `${80 - i * 7}%` }}
+                />
               ))}
             </div>
           </div>
@@ -155,7 +166,12 @@ function EventDetails() {
         {!loading && error && (
           <div className="ed-error">
             <p>{error}</p>
-            <button onClick={() => navigate('/upcoming-events')} className="ed-primaryBtn">Go Back</button>
+            <button
+              onClick={() => navigate("/upcoming-events")}
+              className="ed-primaryBtn"
+            >
+              Go Back
+            </button>
           </div>
         )}
 
@@ -173,7 +189,9 @@ function EventDetails() {
               )}
               <div className="ed-mediaGradient" />
               <div className="ed-badgeGroup">
-                <span className="ed-badge type">{(event.event_type || 'event').toUpperCase()}</span>
+                <span className="ed-badge type">
+                  {(event.event_type || "event").toUpperCase()}
+                </span>
                 {new Date(event.date) > new Date() ? (
                   <span className="ed-badge upcoming">UPCOMING</span>
                 ) : (
@@ -185,7 +203,9 @@ function EventDetails() {
             <div className="ed-body">
               <header className="ed-header">
                 <h1 className="ed-title">{event.title}</h1>
-                <p className="ed-organizer">Hosted by <strong>{event.organizer}</strong></p>
+                <p className="ed-organizer">
+                  Hosted by <strong>{event.organizer}</strong>
+                </p>
               </header>
 
               <section className="ed-metaGrid">
@@ -201,14 +221,22 @@ function EventDetails() {
                   <h4>Location</h4>
                   <p>{event.location}</p>
                 </div>
-                <div className="ed-metaBox">
-                  <h4>Fee</h4>
-                  <p>{event.registration_fee ? `৳ ${event.registration_fee}` : 'Free'}</p>
-                </div>
-                <div className="ed-metaBox">
-                  <h4>Prize Money</h4>
-                  <p>{event.prize_money ? `৳ ${event.prize_money}` : '—'}</p>
-                </div>
+                {event.registration_fee !== 0 && (
+                  <div className="ed-metaBox">
+                    <h4>Fee</h4>
+                    <p>
+                      {event.registration_fee
+                        ? `৳ ${event.registration_fee}`
+                        : "Free"}
+                    </p>
+                  </div>
+                )}
+                {event.prize_money !== 0 && (
+                  <div className="ed-metaBox">
+                    <h4>Prize Money</h4>
+                    <p>{event.prize_money ? `৳ ${event.prize_money}` : "—"}</p>
+                  </div>
+                )}
                 <div className="ed-metaBox">
                   <h4>Created</h4>
                   <p>{formatDateTime(event.createdAt)}</p>
@@ -223,24 +251,43 @@ function EventDetails() {
               <div className="ed-actions">
                 {user?.isAdmin ? (
                   <>
-                    <button className="ed-primaryBtn" onClick={openEdit}>Edit Event</button>
-                    <button className="ed-outlineBtn" onClick={deleteEvent}>Delete</button>
+                    <button className="ed-primaryBtn" onClick={openEdit}>
+                      Edit Event
+                    </button>
+                    <button className="ed-outlineBtn" onClick={deleteEvent}>
+                      Delete
+                    </button>
                   </>
                 ) : (
                   <>
-                    <button 
-                      className={`ed-primaryBtn ${!isRegistered ? 'pulse' : ''}`}
+                    <button
+                      className={`ed-primaryBtn ${
+                        !isRegistered ? "pulse" : ""
+                      }`}
                       onClick={handleRegister}
-                      disabled={registering || isRegistered}
+                      disabled={isRegistered}
                     >
-                      {registering ? 'Registering...' : isRegistered ? 'Registered' : 'Register Now'}
+                      {isRegistered ? "Registered" : "Register Now"}
                     </button>
-                    <button className="ed-outlineBtn" onClick={() => navigate('/upcoming-events')}>More Events</button>
+                    <button
+                      className="ed-outlineBtn"
+                      onClick={() => navigate("/upcoming-events")}
+                    >
+                      More Events
+                    </button>
                   </>
                 )}
               </div>
-              {regError && !registering && !isRegistered && (
-                <p style={{color:'var(--error-color,#ff6b6b)',fontSize:'.8rem',marginTop:'.5rem'}}>{regError}</p>
+              {regError && !isRegistered && (
+                <p
+                  style={{
+                    color: "var(--error-color,#ff6b6b)",
+                    fontSize: ".8rem",
+                    marginTop: ".5rem",
+                  }}
+                >
+                  {regError}
+                </p>
               )}
             </div>
           </article>
@@ -248,7 +295,15 @@ function EventDetails() {
       </main>
       <Footer />
       <ToastContainer />
-      {registering && <Loader color={document.documentElement.getAttribute('data-theme')==='dark' ? '#ffffff' : '#000000'} />}
+      {/* {registering && (
+        <Loader
+          color={
+            document.documentElement.getAttribute("data-theme") === "dark"
+              ? "#ffffff"
+              : "#000000"
+          }
+        />
+      )} */}
     </div>
   );
 }

@@ -10,10 +10,14 @@ import ManageEvent from "./Pages/ManageEvent.jsx";
 import About from "./Pages/About.jsx";
 import Contact from "./Pages/Contact.jsx";
 import { useAuth } from "./contexts/AuthContext.jsx";
-import EventDetails from './Pages/EventDetails.jsx';
-import EditEvent from './Pages/EditEvent.jsx';
+
+import EventDetails from "./Pages/EventDetails.jsx";
+import EditEvent from "./Pages/EditEvent.jsx";
+import Success from "./Pages/Success.jsx";
+import Failure from "./Pages/Failure.jsx";
 import Forbidden from './Pages/Forbidden.jsx';
 import NotFound from './Pages/NotFound.jsx';
+
 
 function App() {
   const { isAuthenticated, loading, user } = useAuth();
@@ -36,7 +40,11 @@ function App() {
         <Route
           path="/upcoming-events"
           element={
-            isAuthenticated ? <UpcomingEvent /> : <Navigate to="/login" replace />
+            isAuthenticated ? (
+              <UpcomingEvent />
+            ) : (
+              <Navigate to="/login" replace />
+            )
           }
         />
         <Route
@@ -61,8 +69,13 @@ function App() {
         />
         <Route path="/about" element={<About />} />
         <Route path="/contact" element={<Contact />} />
+
+        <Route path="/success" element={<Success />} />
+        <Route path="/failure?" element={<Failure />} />
+
   <Route path="/events/:id" element={isAuthenticated ? <EventDetails /> : <Navigate to="/login" replace />} />
   <Route path="/events/:id/edit" element={isAuthenticated ? (user?.isAdmin ? <EditEvent /> : <Navigate to="/forbidden" replace />) : <Navigate to="/login" replace />} />
+
         <Route path="/dashboard" element={<div>Dashboard Coming Soon</div>} />
   <Route path="/forbidden" element={<Forbidden />} />
   <Route path="*" element={<NotFound />} />
