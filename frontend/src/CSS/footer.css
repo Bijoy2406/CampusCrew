@@ -1,0 +1,82 @@
+.home-footer {
+  
+  text-align: center;
+  border-top: 1px solid var(--border-light);
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+  transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
+  margin-top: auto;
+}
+
+.home-footer p {
+  margin: 0;
+  font-size: 14px;
+  color: var(--text-primary);
+  transition: color 0.3s ease;
+}
+
+.footer-links {
+  margin-top: 10px;
+  display: flex;
+  justify-content: center;
+  gap: 15px;
+}
+
+.footer-links a {
+  text-decoration: none;
+  color: var(--footer-link-color); /* always contrasts background */
+  font-weight: 500;
+  transition: color 0.3s ease, transform 0.2s ease;
+}
+
+.footer-links a:hover {
+  color: var(--footer-link-hover); /* theme accent on hover */
+  transform: translateY(-2px);
+}
+
+/* Responsive: stack links on small screens */
+@media (max-width: 600px) {
+  .footer-links {
+    flex-direction: column;
+    gap: 8px;
+  }
+}
+
+/* High contrast support */
+@media (prefers-contrast: high) {
+  :root {
+    --border-light: #000000;
+    --border-medium: #000000;
+    --border-strong: #000000;
+
+    --bg-primary: #ffffff;
+    --text-primary: #000000;
+    --footer-link-color: #000000;
+    --footer-link-hover: #000000;
+  }
+
+  [data-theme="dark"] {
+    --border-light: #ffffff;
+    --border-medium: #ffffff;
+    --border-strong: #ffffff;
+
+    --bg-primary: #000000;
+    --text-primary: #ffffff;
+    --footer-link-color: #ffffff;
+    --footer-link-hover: #ffffff;
+  }
+}
+
+.footer-title {
+  font-size: 18px; /* slightly bigger */
+  margin-bottom: 10px;
+  color: var(--text-primary);
+  transition: color 0.3s ease;
+}
+
+.footer-bottom {
+  margin-top: 15px;
+  text-align: center;
+  font-size: 14px;
+  color: var(--text-secondary);
+}

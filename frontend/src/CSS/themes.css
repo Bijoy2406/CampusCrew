@@ -266,13 +266,14 @@
 
 .footer-links a {
   text-decoration: none;
-  color: var(--text-primary); /* default text color */
+  /* links always contrast with footer background */
+  color: var(--footer-link-color);
   transition: color 0.3s ease;
   font-weight: 500;
 }
 
 .footer-links a:hover {
-  color: #9c7bb5; /* darker lavender theme hover */
+  color: var(--footer-link-hover); /* accent color on hover */
 }
 
 /* Dark mode adjustments */
@@ -282,9 +283,7 @@
   color: var(--text-primary);
 }
 
-[data-theme="dark"] .footer-links a:hover {
-  color: #9c7bb5;
-}
+/* Dark mode hover is handled by --footer-link-hover */
 
 
 /* Button themes */
@@ -344,11 +343,23 @@
     --border-light: #000000;
     --border-medium: #000000;
     --border-strong: #000000;
+
+    --bg-primary: #ffffff;    
+    --text-primary: #000000;    
+    --footer-link-color: #aa9c9c;
+    --footer-link-hover: #cdadad;
   }
   
   [data-theme="dark"] {
     --border-light: #ffffff;
     --border-medium: #ffffff;
     --border-strong: #ffffff;
+
+    --bg-primary: #000000;      
+    --text-primary: #ffffff;   
+    --footer-link-color: #ffffff;
+    --footer-link-hover: #ffffff;
   }
 }
+
+

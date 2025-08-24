@@ -9,7 +9,7 @@ import { useAuth } from "../contexts/AuthContext";
 // import { fetchWithToken } from "../Utils/authUtils";
 import PasswordChecklist from "react-password-checklist";
 import { ToastContainer, toast } from "react-toastify";
-import 'react-toastify/dist/ReactToastify.css';
+import "react-toastify/dist/ReactToastify.css";
 import axios from "axios";
 
 import cloud from "../assets/img/cloud.png";
@@ -96,28 +96,28 @@ function Login() {
           return; // Skip finally navigation logic
         }
       } else {
-  toast.error(data.errors || "Login failed. Please try again.");
+        toast.error(data.errors || "Login failed. Please try again.");
       }
     } catch (error) {
       if (error.response) {
         // Server responded with a status other than 2xx
         console.error("Server error:", error.response);
-  toast.error(
+        toast.error(
           error.response.data?.errors ||
             `HTTP error! status: ${error.response.status}`
         );
       } else if (error.request) {
         // Request was made but no response
         console.error("No response received:", error.request);
-  toast.error("No response from server. Please try again.");
+        toast.error("No response from server. Please try again.");
       } else {
         // Other errors
         console.error("Axios error:", error.message);
-  toast.error("An error occurred during login. Please try again.");
+        toast.error("An error occurred during login. Please try again.");
       }
     } finally {
-  // If we already turned loading off & scheduled navigation via toast, this is harmless
-  setLoading(false);
+      // If we already turned loading off & scheduled navigation via toast, this is harmless
+      setLoading(false);
     }
   };
 
@@ -148,7 +148,7 @@ function Login() {
       }
     } catch (error) {
       console.error("Error refreshing access token:", error);
-  toast.error("Session expired, please log in again.");
+      toast.error("Session expired, please log in again.");
       localStorage.removeItem("auth-token");
       localStorage.removeItem("refresh-token");
       window.location.replace("/login");
@@ -157,11 +157,11 @@ function Login() {
 
   const signup = async () => {
     if (!isPasswordValid) {
-  toast.warning("Password does not meet the criteria.");
+      toast.warning("Password does not meet the criteria.");
       return; // Exit the function if password criteria are not met
     }
     setLoading(true); // Show loader
-  toast.info("Creating your account...", { autoClose: 1500 });
+    toast.info("Creating your account...", { autoClose: 1500 });
 
     try {
       const response = await axios.post(`${backend_link}/api/signup`, {
@@ -170,20 +170,23 @@ function Login() {
         password: registerForm.password,
         dob: registerForm.dob, // Include DOB
         location: registerForm.location, // Include Location
-        isAdmin: registerForm.isAdmin || false,
+        isAdmin: false,
       });
 
       const data = response.data; // axios automatically parses JSON
 
       if (data.success) {
-        toast.success(data.message || "Signup successful! Please check your email for a verification link.");
+        toast.success(
+          data.message ||
+            "Signup successful! Please check your email for a verification link."
+        );
         setShowLogin(true); // Redirect to sign-in state
       } else {
-  toast.error(data.errors || "Signup failed");
+        toast.error(data.errors || "Signup failed");
       }
     } catch (error) {
       console.error("Failed to fetch during signup:", error);
-  toast.error(error.response?.data?.message || "Signup request failed");
+      toast.error(error.response?.data?.message || "Signup request failed");
     } finally {
       setLoading(false); // Hide loader
     }
@@ -191,12 +194,12 @@ function Login() {
 
   const handleLoginClick = () => {
     setShowLogin(true);
-  toast.info("Switched to Sign In", { autoClose: 1000 });
+    toast.info("Switched to Sign In", { autoClose: 1000 });
   };
 
   const handleRegisterClick = () => {
     setShowLogin(false);
-  toast.info("Switched to Sign Up", { autoClose: 1000 });
+    toast.info("Switched to Sign Up", { autoClose: 1000 });
   };
 
   const handleDateChange = (date) => {
@@ -230,8 +233,15 @@ function Login() {
 
   return (
     <div className="login-background">
-  <ToastContainer position="top-right" newestOnTop pauseOnFocusLoss draggable pauseOnHover theme="colored" />
-  {loading && <Loader />} {/* Render the loader when loading is true */}
+      <ToastContainer
+        position="top-right"
+        newestOnTop
+        pauseOnFocusLoss
+        draggable
+        pauseOnHover
+        theme="colored"
+      />
+      {loading && <Loader />} {/* Render the loader when loading is true */}
       <div className={`form-container ${loading ? "blurred" : ""}`}>
         {" "}
         {/* Optionally blur the form when loading */}
@@ -257,7 +267,7 @@ function Login() {
             <i className="bx bx-home"></i>
           </Link>
           <p className="featured-words">
-            Welcome To <span>Trendycart</span>
+            Welcome To <span>CampusCrew</span>
           </p>
         </div>
         <div className="col col-2">
@@ -440,7 +450,7 @@ function Login() {
             </div>
           </form>
         </div>
-        {!showLogin && (
+        {/* {!showLogin && (
           <div className="admin-box">
             <label className="admin-checkbox">
               <input
@@ -456,7 +466,7 @@ function Login() {
               </span>
             </label>
           </div>
-        )}
+        )} */}
       </div>
     </div>
   );
