@@ -100,7 +100,7 @@
 }
 
 .nav-link:hover::before {
-  opacity: 1;
+  opacity: 0.4;
 }
 
 .nav-link:hover {
@@ -113,6 +113,8 @@
 
 .nav-link:active {
   transform: translateY(0);
+
+
 }
 
 .nav-button {

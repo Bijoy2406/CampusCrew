@@ -113,69 +113,75 @@ const Home = () => {
         <HeroBanner />
 
         <section className="features-section reveal">
-          <h2 className="section-title">Why CampusCrew</h2>
+          <h2 className="section-title">Why CampusCrew?</h2>
           <p className="section-lead">
-            An integrated operating system for modern student event teams.
+            A complete platform to plan, promote, and manage student events with
+            ease.
           </p>
+
           <div className="features-grid">
             <div className="feature-card pop">
               <div className="feature-icon">
                 <FaRocket />
               </div>
-              <h3 className="feature-title">Launch Faster</h3>
+              <h3 className="feature-title">Create Events Easily</h3>
               <p className="feature-description">
-                Create polished event pages, registration flows & announcements
-                in minutes.
+                Set up event pages, registration forms, and schedules in
+                minutes—no coding required.
               </p>
             </div>
+
             <div className="feature-card pop delay-1">
               <div className="feature-icon">
                 <FaBullseye />
               </div>
-              <h3 className="feature-title">Drive Engagement</h3>
+              <h3 className="feature-title">Increase Participation</h3>
               <p className="feature-description">
-                Smart reminders and targeted messaging boost attendance and
-                retention.
+                Smart reminders and personalized updates ensure students never
+                miss an event.
               </p>
             </div>
+
             <div className="feature-card pop delay-2">
               <div className="feature-icon">
                 <FaCogs />
               </div>
-              <h3 className="feature-title">Automate Ops</h3>
+              <h3 className="feature-title">Simplify Management</h3>
               <p className="feature-description">
-                Streamline approvals, capacity limits, waitlists and badge /
-                check‑in workflows.
+                Automate approvals, track attendance, and manage waitlists with
+                zero hassle.
               </p>
             </div>
+
             <div className="feature-card pop delay-3">
               <div className="feature-icon">
                 <FaChartLine />
               </div>
-              <h3 className="feature-title">Actionable Insights</h3>
+              <h3 className="feature-title">Get Valuable Insights</h3>
               <p className="feature-description">
-                Attendance cohorts, conversion funnels & growth
-                metrics—visualized clearly.
+                Visualize attendance trends, engagement levels, and event
+                performance metrics.
               </p>
             </div>
+
             <div className="feature-card pop delay-4">
               <div className="feature-icon">
                 <FaLock />
               </div>
-              <h3 className="feature-title">Enterprise‑Grade Security</h3>
+              <h3 className="feature-title">Secure & Reliable</h3>
               <p className="feature-description">
-                Role‑based access, audit trails & safe auth practices protect
-                your data.
+                Keep data safe with role-based access and secure authentication.
               </p>
             </div>
+
             <div className="feature-card pop delay-5">
               <div className="feature-icon">
                 <FaUsers />
               </div>
-              <h3 className="feature-title">Community Growth</h3>
+              <h3 className="feature-title">Build Campus Community</h3>
               <p className="feature-description">
-                Turn one‑off attendees into an active, loyal contributor
-                network.
+                Turn events into lasting connections and foster an active
+                student network.
               </p>
             </div>
           </div>
@@ -302,31 +308,30 @@ const Home = () => {
           <div className="eventShowcase-deco orb orb-a" aria-hidden="true" />
           <div className="eventShowcase-deco orb orb-b" aria-hidden="true" />
         </section>
-
         <section className="process-section reveal">
           <div className="process-inner">
-            <h2 className="section-title">Simple, Powerful Workflow</h2>
+            <h2 className="section-title">How CampusCrew Works</h2>
             <div className="process-grid">
               {[
                 {
                   step: "01",
                   title: "Create",
-                  text: "Configure agenda, speakers, media assets & capacity.",
+                  text: "Set up event details, schedules, and registration forms in minutes.",
                 },
                 {
                   step: "02",
                   title: "Promote",
-                  text: "Share branded pages and auto‑generated social snippets.",
+                  text: "Share events with branded pages, email invites, and social posts.",
                 },
                 {
                   step: "03",
                   title: "Engage",
-                  text: "Run check‑ins, live updates & gather instant feedback.",
+                  text: "Manage check-ins, send live updates, and keep students connected.",
                 },
                 {
                   step: "04",
                   title: "Analyze",
-                  text: "Compare events, track cohorts & optimize future planning.",
+                  text: "View attendance stats and feedback to improve future events.",
                 },
               ].map((item) => (
                 <div key={item.step} className="process-card pop">
