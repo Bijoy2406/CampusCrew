@@ -7,6 +7,7 @@ import {
 } from "../utils/toastUtils";
 import "../CSS/contact.css";
 import Header from "../Components/Header";
+import Footer from "../Components/Footer";
 
 function Contact() {
   const [formData, setFormData] = useState({
@@ -179,6 +180,7 @@ function Contact() {
           </div>
         </div>
       </div>
+      <Footer/>
     </>
   );
 }

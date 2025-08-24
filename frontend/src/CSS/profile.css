@@ -1,7 +1,9 @@
 
 
 .profile-container {
-  padding: 2rem;
+  padding-top: 100px; /* adjust based on header height */
+  flex: 1;
+  flex-direction: column;
   background: var(--bg-primary);
   min-height: 100vh;
   color: var(--text-primary);
@@ -17,10 +19,14 @@
 }
 
 .profile-header {
-  background: linear-gradient(135deg, #ab81ad, #afa6b7) ;
+  position: fixed; /* make it fixed at top */
+  top: 0;
+  left: 0;
+  width: 100%;
+  z-index: 1000; /* ensure it stays above other content */
+  background: linear-gradient(135deg, #5f4292, #afa6b7);
   padding: 1rem 0;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-  margin-bottom: 2rem;
   border-bottom: 1px solid var(--border-light);
 }
 
@@ -75,7 +81,7 @@
 /* Profile Cards */
 .profile-left,
 .profile-right {
-  background: linear-gradient(135deg, #7c2a81, #f3f0ff); /* light gradient */
+  background: linear-gradient(135deg, #a17aca, #f3f0ff); /* light gradient */
   border-radius: 16px;
   padding: 2rem;
   box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
@@ -88,7 +94,11 @@
   border: 2px solid transparent; /* default border */
   transition: border 0.3s ease, box-shadow 0.3s ease;
 }
-
+.profile-page {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh; /* full viewport height */
+}
 .profile-left:hover,
 .profile-right:hover {
   border: 2px solid #8a2be2; /* highlight on hover */
@@ -281,3 +291,4 @@
     gap: 1rem;
   }
 }
+
