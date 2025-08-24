@@ -6,16 +6,7 @@ html {
 }
 
 /* Header scroll effect */
-.home-header {
-  background: linear-gradient(
-    135deg, 
-    #bb99d9 30%,   /* base lavender */
-    #b58bc7 50%,  /* medium lavender */
-    #bb79d7 100%  /* deeper lavender */
-  );
-  backdrop-filter: blur(20px);
-  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
-}
+.home-header { background: var(--header-bg); backdrop-filter:blur(20px); box-shadow:0 10px 40px rgba(0,0,0,0.15); }
 
 
 /* Logo animation keyframes */
@@ -245,12 +236,7 @@ html {
 }
 
 /* Gradient text effect for brand name */
-.brand-text {
-  background: linear-gradient(135deg, #d3d3ff, #a5a5e0);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-}
+.brand-text { background:var(--gradient-primary); -webkit-background-clip:text; background-clip:text; -webkit-text-fill-color:transparent; }
 
 /* Floating animation for navigation items */
 @keyframes float {
@@ -327,50 +313,6 @@ html {
   }
 }
 
-/* Dark theme support */
-@media (prefers-color-scheme: dark) {
-  .home-header {
-    background: linear-gradient(135deg, #1f1f2e 0%, #2a2a3d 100%);
-  }
-  
-  .nav-link {
-    color: #d3d3ff;
-  }
-
-  .nav-link.active {
-    border: 1px solid #a5a5e0;
-    color: #fff;
-    box-shadow: 0 6px 20px rgba(211, 211, 255, 0.5);
-  }
-
-  .dropdown-menu {
-    background: linear-gradient(
-      135deg,
-      rgba(60, 60, 90, 0.95),
-      rgba(40, 40, 70, 0.95)
-    );
-    border: 1px solid #a5a5e0;
-  }
-
-  .dropdown-item {
-    color: #d3d3ff;
-  }
-
-  .dropdown-item:hover {
-    background: rgba(170, 170, 235, 0.8);
-    color: #fff;
-  }
-
-  .dropdown-logout {
-    border: 2px solid #d3d3ff;
-    color: #d3d3ff;
-  }
-
-  .dropdown-logout:hover {
-    background: linear-gradient(135deg, #a5a5e0, #d3d3ff);
-    color: #fff;
-  }
-}
 
 /* High contrast mode support */
 @media (prefers-contrast: high) {

@@ -3,7 +3,7 @@ import React from 'react';
 function ManageEvent() {
   return (
     <div>
-      {/* Manage Event page content will be added here */}
+      <h1>Manage Events Page</h1>
     </div>
   );
 }

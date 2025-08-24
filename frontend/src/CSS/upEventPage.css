@@ -9,21 +9,7 @@
 }
 
 /* Page */
-.eventsPage-container {
-  --page-gradient-start: #dfe4e6;
-  --page-gradient-end: #ffffff;
-  --overlay-gradient: linear-gradient(
-    to top,
-    rgba(0,0,0,0.82) 0%,
-    rgba(0,0,0,0.55) 38%,
-    rgba(0,0,0,0.15) 72%,
-    rgba(0,0,0,0) 100%
-  );
-  background: linear-gradient(115deg, var(--page-gradient-start), var(--page-gradient-end));
-  min-height: 100vh;
-  font-family: "Inter", system-ui, sans-serif;
-  color: #111;
-}
+.eventsPage-container { --overlay-gradient: linear-gradient(to top, rgba(0,0,0,0.82) 0%, rgba(0,0,0,0.55) 38%, rgba(0,0,0,0.15) 72%, rgba(0,0,0,0) 100%); background:linear-gradient(115deg, var(--events-page-gradient-start), var(--events-page-gradient-end)); min-height:100vh; font-family:"Inter", system-ui, sans-serif; color:var(--text-primary); }
 
 .eventsPage-main {
   max-width: 1320px;
@@ -32,14 +18,7 @@
 }
 
 /* States */
-.eventsPage-loading,
-.eventsPage-error,
-.eventsPage-noEvents {
-  text-align: center;
-  font-size: 1.05rem;
-  padding: 4rem 1.5rem;
-  color: #444;
-}
+.eventsPage-loading, .eventsPage-error, .eventsPage-noEvents { text-align:center; font-size:1.05rem; padding:4rem 1.5rem; color:var(--text-secondary); }
 
 /* EXACTLY 3 columns on large screens */
 .eventCard-grid {
@@ -116,20 +95,7 @@
 }
 
 /* Blurred info bar at bottom */
-.eventCard-infoBar {
-  position: absolute;
-  inset-inline: 0;
-  bottom: 0;
-  display: flex;
-  align-items: stretch;
-  padding: 0;
-  z-index: 2;
-  backdrop-filter: blur(10px) saturate(160%);
-  -webkit-backdrop-filter: blur(10px) saturate(160%);
-  background: rgba(15, 15, 15, 0.35);
-  border-top: 1px solid rgba(255,255,255,0.08);
-  pointer-events: none; /* text not interactive right now */
-}
+.eventCard-infoBar { position:absolute; inset-inline:0; bottom:0; display:flex; align-items:stretch; padding:0; z-index:2; backdrop-filter:blur(10px) saturate(160%); -webkit-backdrop-filter:blur(10px) saturate(160%); background:var(--events-infoBar-bg); border-top:1px solid var(--events-infoBar-border); pointer-events:none; }
 
 /* Date block */
 .eventCard-dateBlock {
@@ -200,6 +166,7 @@
   max-height: 2.6em;
   overflow: hidden;
   display: -webkit-box;
+  line-clamp: 3;
   -webkit-line-clamp: 3;
   -webkit-box-orient: vertical;
 }
@@ -275,14 +242,3 @@
   }
 }
 
-/* Optional dark theme */
-[data-theme="dark"] .eventsPage-container {
-  --page-gradient-start: #1f2426;
-  --page-gradient-end: #2b3134;
-  color: #f5f5f5;
-}
-
-[data-theme="dark"] .eventCard-infoBar {
-  background: rgba(15,15,15,0.55);
-  border-top: 1px solid rgba(255,255,255,0.06);
-}
