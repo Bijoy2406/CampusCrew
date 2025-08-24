@@ -1,14 +1,91 @@
-import React from "react";
+import React, { useEffect, useState, useCallback } from "react";
+import axios from "axios";
 import { Link } from "react-router-dom";
-import { FaRocket, FaBullseye, FaTools } from "react-icons/fa";
+import { FaRocket, FaBullseye, FaTools, FaLock, FaChartLine, FaUsers, FaCogs } from "react-icons/fa";
 import { useAuth } from "../contexts/AuthContext";
 import "../CSS/home.css";
-import logo from "../assets/img/abacus.png";
+import HeroBanner from "../Components/HeroBanner";
 import Footer from "../Components/Footer";
 import Header from "../Components/Header";
 
 const Home = () => {
   const { isAuthenticated, logout } = useAuth();
+  const backend_link = import.meta.env.VITE_BACKEND_LINK;
+
+  const [events, setEvents] = useState([]);
+  const [evLoading, setEvLoading] = useState(true);
+  const [evError, setEvError] = useState("");
+  const [currentIdx, setCurrentIdx] = useState(0);
+  const [isPaused, setIsPaused] = useState(false); // pause on hover/focus
+
+  // Basic scroll reveal (CSS class toggling)
+  useEffect(() => {
+    // Scroll reveal for elements with .reveal
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((e) => {
+          if (e.isIntersecting) e.target.classList.add("in-view");
+        });
+      },
+      { threshold: 0.15 }
+    );
+    const revealEls = document.querySelectorAll(".reveal");
+    revealEls.forEach((el) => observer.observe(el));
+    return () => observer.disconnect();
+  }, []);
+
+  // Fetch a small set of upcoming events (limit 6)
+  useEffect(() => {
+    let ignore = false;
+    (async () => {
+      try {
+        const res = await axios.get(`${backend_link}/api/events`);
+        if (!ignore && res.data?.success) {
+          const upcoming = (res.data.events || [])
+            .filter(ev => ev.date)
+            .sort((a,b) => new Date(a.date) - new Date(b.date))
+            .slice(0, 6);
+          setEvents(upcoming);
+        }
+      } catch (e) {
+        if (!ignore) setEvError("Failed to load events");
+      } finally {
+        if (!ignore) setEvLoading(false);
+      }
+    })();
+    return () => { ignore = true; };
+  }, [backend_link]);
+
+  // Navigation handlers for single event showcase
+  const nextEvent = useCallback(() => {
+    setCurrentIdx(i => (events.length ? (i + 1) % events.length : 0));
+  }, [events.length]);
+  const prevEvent = useCallback(() => {
+    setCurrentIdx(i => (events.length ? (i - 1 + events.length) % events.length : 0));
+  }, [events.length]);
+
+  // Autoplay (skip if user prefers reduced motion)
+  useEffect(() => {
+    if (isPaused) return; // paused due to hover/focus
+    if (events.length < 2) return; // nothing to rotate
+    const mq = window.matchMedia('(prefers-reduced-motion: reduce)');
+    if (mq.matches) return; // respect user preference
+    const id = setInterval(() => {
+      setCurrentIdx(i => (i + 1) % events.length);
+    }, 6500); // 6.5s interval
+    return () => clearInterval(id);
+  }, [events.length, isPaused]);
+
+  // Keyboard navigation (left/right arrows) when section in view
+  useEffect(() => {
+    const handler = (e) => {
+      if (!events.length) return;
+      if (e.key === 'ArrowRight') nextEvent();
+      if (e.key === 'ArrowLeft') prevEvent();
+    };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, [events.length, nextEvent, prevEvent]);
 
   return (
     <div className="home-container">
@@ -43,53 +120,136 @@ const Home = () => {
       </header> */}
 
       <main>
-        <section className="hero-section">
-          <div className="hero-content">
-            <h1 className="hero-title">Build, Launch, and Grow</h1>
-            <p className="hero-subtitle">
-              Our platform provides the tools you need to bring your ideas to
-              life. Join our community and start your journey today.
-            </p>
-            {!isAuthenticated && (
-              <Link to="/login" className="button primary large">
-                Sign Up for Free
-              </Link>
-            )}
+        <HeroBanner />
+
+        <section className="features-section reveal">
+          <h2 className="section-title">Why CampusCrew</h2>
+          <p className="section-lead">An integrated operating system for modern student event teams.</p>
+          <div className="features-grid">
+            <div className="feature-card pop">
+              <div className="feature-icon"><FaRocket /></div>
+              <h3 className="feature-title">Launch Faster</h3>
+              <p className="feature-description">Create polished event pages, registration flows & announcements in minutes.</p>
+            </div>
+            <div className="feature-card pop delay-1">
+              <div className="feature-icon"><FaBullseye /></div>
+              <h3 className="feature-title">Drive Engagement</h3>
+              <p className="feature-description">Smart reminders and targeted messaging boost attendance and retention.</p>
+            </div>
+            <div className="feature-card pop delay-2">
+              <div className="feature-icon"><FaCogs /></div>
+              <h3 className="feature-title">Automate Ops</h3>
+              <p className="feature-description">Streamline approvals, capacity limits, waitlists and badge / check‑in workflows.</p>
+            </div>
+            <div className="feature-card pop delay-3">
+              <div className="feature-icon"><FaChartLine /></div>
+              <h3 className="feature-title">Actionable Insights</h3>
+              <p className="feature-description">Attendance cohorts, conversion funnels & growth metrics—visualized clearly.</p>
+            </div>
+            <div className="feature-card pop delay-4">
+              <div className="feature-icon"><FaLock /></div>
+              <h3 className="feature-title">Enterprise‑Grade Security</h3>
+              <p className="feature-description">Role‑based access, audit trails & safe auth practices protect your data.</p>
+            </div>
+            <div className="feature-card pop delay-5">
+              <div className="feature-icon"><FaUsers /></div>
+              <h3 className="feature-title">Community Growth</h3>
+              <p className="feature-description">Turn one‑off attendees into an active, loyal contributor network.</p>
+            </div>
           </div>
         </section>
 
-        <section className="features-section">
-          <h2 className="section-title">Why Choose Us?</h2>
-          <div className="features-grid">
-            <div className="feature-card">
-              <div className="feature-icon">
-                <FaRocket />
+        {/* Event Showcase Section (Single Image Hover-Reveal) */}
+        <section className="eventShowcase-section reveal" aria-labelledby="eventShowcase-heading">
+          <div className="eventShowcase-inner single-mode">
+            <header className="eventShowcase-header">
+              <h2 id="eventShowcase-heading" className="eventShowcase-title">
+                Upcoming <span className="gradient-text">Spotlight</span>
+              </h2>
+              <p className="eventShowcase-sub">Hover over image to slide and reveal event details. Navigate with arrows.</p>
+            </header>
+            {evLoading && <div className="eventShowcase-loading">Loading events...</div>}
+            {!evLoading && evError && <div className="eventShowcase-error">{evError}</div>}
+            {!evLoading && !evError && events.length === 0 && <div className="eventShowcase-empty">No upcoming events yet.</div>}
+            {!evLoading && !evError && events.length > 0 && (
+              <div
+                className="eventSlide-wrapper"
+                role="region"
+                aria-label="Event preview"
+                onMouseEnter={() => setIsPaused(true)}
+                onMouseLeave={() => setIsPaused(false)}
+                onFocus={() => setIsPaused(true)}
+                onBlur={(e) => {
+                  // If focus leaves the wrapper entirely
+                  if (!e.currentTarget.contains(e.relatedTarget)) setIsPaused(false);
+                }}
+              >
+                <button aria-label="Previous event" className="nav-arrow prev" onClick={prevEvent} disabled={events.length<2}>&lt;</button>
+                <button aria-label="Next event" className="nav-arrow next" onClick={nextEvent} disabled={events.length<2}>&gt;</button>
+                {events.map((ev, i) => {
+                  const active = i === currentIdx;
+                  const d = ev.date ? new Date(ev.date) : null;
+                  const month = d ? d.toLocaleDateString('en-US',{month:'short'}) : '--';
+                  const day = d ? d.getDate() : '--';
+                  const direction = i % 2 === 0 ? 'left' : 'right';
+                  return (
+                    <div key={ev._id || i} className={`eventSlide ${active ? 'is-active' : ''} dir-${direction}`} aria-hidden={!active}>
+                      <Link to={`/events/${ev._id}`} className="eventSlide-link" tabIndex={active ? 0 : -1}>
+                        <div className="eventSlide-imageWrap">
+                          {ev.event_image ? (
+                            <img src={ev.event_image} alt={ev.title} loading="lazy" />
+                          ) : (
+                            <div className="img-fallback">No Image</div>
+                          )}
+                        </div>
+                        <div className="eventSlide-details">
+                          <div className="eventSlide-date">
+                            <span className="m">{month}</span>
+                            <span className="d">{day}</span>
+                          </div>
+                          <h3 className="eventSlide-title" title={ev.title}>{ev.title}</h3>
+                          {ev.location && <p className="eventSlide-loc">{ev.location}</p>}
+                          {ev.event_type && <span className="eventSlide-chip">{ev.event_type}</span>}
+                          {ev.description && <p className="eventSlide-desc">{ev.description}</p>}
+                        </div>
+                      </Link>
+                    </div>
+                  );
+                })}
               </div>
-              <h3 className="feature-title">Fast Deployment</h3>
-              <p className="feature-description">
-                Get your projects up and running in minutes, not hours. Our
-                streamlined process makes deployment a breeze.
-              </p>
+            )}
+            <div className="eventShowcase-ctaRow">
+              <Link to="/upcoming-events" className="btn btn-primary">View All Events</Link>
             </div>
-            <div className="feature-card">
-              <div className="feature-icon">
-                <FaBullseye />
-              </div>
-              <h3 className="feature-title">Achieve Your Goals</h3>
-              <p className="feature-description">
-                Set your targets and track your progress with our powerful
-                analytics and reporting tools.
-              </p>
+          </div>
+          <div className="eventShowcase-deco orb orb-a" aria-hidden="true" />
+          <div className="eventShowcase-deco orb orb-b" aria-hidden="true" />
+        </section>
+
+        <section className="process-section reveal">
+          <div className="process-inner">
+            <h2 className="section-title">Simple, Powerful Workflow</h2>
+            <div className="process-grid">
+              {[
+                { step: '01', title: 'Create', text: 'Configure agenda, speakers, media assets & capacity.' },
+                { step: '02', title: 'Promote', text: 'Share branded pages and auto‑generated social snippets.' },
+                { step: '03', title: 'Engage', text: 'Run check‑ins, live updates & gather instant feedback.' },
+                { step: '04', title: 'Analyze', text: 'Compare events, track cohorts & optimize future planning.' }
+              ].map(item => (
+                <div key={item.step} className="process-card pop">
+                  <span className="badge-step">{item.step}</span>
+                  <h3>{item.title}</h3>
+                  <p>{item.text}</p>
+                </div>
+              ))}
             </div>
-            <div className="feature-card">
-              <div className="feature-icon">
-                <FaTools />
-              </div>
-              <h3 className="feature-title">Powerful Tools</h3>
-              <p className="feature-description">
-                Access a wide range of tools and integrations to build and scale
-                your application.
-              </p>
+          </div>
+        </section>
+
+        <section className="testimonial-band reveal">
+          <div className="marquee">
+            <div className="marquee-track">
+              {['“Attendance jumped 40%." – Club Lead','“Setup was unbelievably fast." – Event Admin','“Analytics justified our funding." – Treasurer','“Students loved the UX." – Society President'].map((t,i)=>(<span key={i} className="marquee-item">{t}</span>))}
             </div>
           </div>
         </section>
