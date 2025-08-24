@@ -13,10 +13,10 @@ import EventDetails from "./Pages/EventDetails.jsx";
 import EditEvent from "./Pages/EditEvent.jsx";
 import Success from "./Pages/Success.jsx";
 import Failure from "./Pages/Failure.jsx";
-import Forbidden from './Pages/Forbidden.jsx';
-import NotFound from './Pages/NotFound.jsx';
-import Dashboard from './Pages/Dashboard.jsx';
-
+import Forbidden from "./Pages/Forbidden.jsx";
+import NotFound from "./Pages/NotFound.jsx";
+import Dashboard from "./Pages/Dashboard.jsx";
+import EventAttendee from "./Pages/EventAttendee.jsx";
 
 function App() {
   const { isAuthenticated, loading, user } = useAuth();
@@ -49,11 +49,20 @@ function App() {
         <Route
           path="/create-event"
           element={
-            isAuthenticated && user?.isAdmin ? <CreateEvent /> : isAuthenticated ? <Navigate to="/forbidden" replace /> : <Navigate to="/login" replace />
+            isAuthenticated && user?.isAdmin ? (
+              <CreateEvent />
+            ) : isAuthenticated ? (
+              <Navigate to="/forbidden" replace />
+            ) : (
+              <Navigate to="/login" replace />
+            )
           }
         />
-  {/* Common typo / alias redirect */}
-  <Route path="/create-events" element={<Navigate to="/create-event" replace />} />
+        {/* Common typo / alias redirect */}
+        <Route
+          path="/create-events"
+          element={<Navigate to="/create-event" replace />}
+        />
         <Route
           path="/joined-events"
           element={
@@ -66,17 +75,38 @@ function App() {
         <Route path="/success" element={<Success />} />
         <Route path="/failure?" element={<Failure />} />
 
-  <Route path="/events/:id" element={isAuthenticated ? <EventDetails /> : <Navigate to="/login" replace />} />
-  <Route path="/events/:id/edit" element={isAuthenticated ? (user?.isAdmin ? <EditEvent /> : <Navigate to="/forbidden" replace />) : <Navigate to="/login" replace />} />
+        <Route
+          path="/events/:id"
+          element={
+            isAuthenticated ? (
+              <EventDetails />
+            ) : (
+              <Navigate to="/login" replace />
+            )
+          }
+        />
+        <Route
+          path="/events/:id/edit"
+          element={
+            isAuthenticated ? (
+              user?.isAdmin ? (
+                <EditEvent />
+              ) : (
+                <Navigate to="/forbidden" replace />
+              )
+            ) : (
+              <Navigate to="/login" replace />
+            )
+          }
+        />
 
         <Route
           path="/dashboard"
-          element={
-            user?.isAdmin ? <Dashboard /> : <Forbidden />
-          }
+          element={user?.isAdmin ? <Dashboard /> : <Forbidden />}
         />
-  <Route path="/forbidden" element={<Forbidden />} />
-  <Route path="*" element={<NotFound />} />
+        <Route path="/forbidden" element={<Forbidden />} />
+        <Route path="/event-attendee/:id" element={<EventAttendee />} />
+        <Route path="*" element={<NotFound />} />
       </Routes>
     </>
   );
