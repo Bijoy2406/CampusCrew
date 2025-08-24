@@ -1,16 +1,10 @@
 import React, { useState, useRef, useEffect } from "react";
 import stringSimilarity from "string-similarity";
 import "../CSS/ChatBot.css";
-import { faqEventDetails } from "../data/faqEventDetails";
-import { faqSearchDashboard } from "../data/faqSearchDashboard";
-import { faqGeneralSupport } from "../data/faqGeneralSupport";
 import { faqR } from "../data/faqRandom";
 
 
 const faq = [
-  ...faqEventDetails,
-  ...faqSearchDashboard,
-  ...faqGeneralSupport,
   ...faqR
 ];
 function ChatBot() {
