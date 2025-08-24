@@ -1,12 +1,13 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { FaUser, FaEnvelope, FaMapMarkerAlt, FaCalendarAlt, FaEdit, FaSave, FaTimes, FaCamera, FaUpload } from 'react-icons/fa';
+import { FaUser, FaEnvelope, FaMapMarkerAlt, FaCalendarAlt, FaEdit, FaSave, FaTimes, FaCamera, FaUpload, FaLock, FaEye, FaEyeSlash } from 'react-icons/fa';
 import { useAuth } from '../contexts/AuthContext';
 import { apiService } from '../utils/apiService';
 import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import '../CSS/profile.css';
 import Footer from '../Components/Footer';
+import Loader from "../Components/loader";
 
 const Profile = () => {
   const { isAuthenticated, logout, refreshUserData } = useAuth();
@@ -33,6 +34,20 @@ const Profile = () => {
   const [certsOpen, setCertsOpen] = useState(false);
   const [certsLoading, setCertsLoading] = useState(false);
   const [certsError, setCertsError] = useState('');
+
+  // Password change state
+  const [showPasswordModal, setShowPasswordModal] = useState(false);
+  const [passwordData, setPasswordData] = useState({
+    currentPassword: '',
+    newPassword: '',
+    confirmPassword: ''
+  });
+  const [passwordLoading, setPasswordLoading] = useState(false);
+  const [showPasswords, setShowPasswords] = useState({
+    current: false,
+    new: false,
+    confirm: false
+  });
 
   const loadCertificates = async () => {
     if (!profileData._id) return;
@@ -155,6 +170,75 @@ const Profile = () => {
     });
   };
 
+  // Password change functions
+  const handlePasswordChange = (e) => {
+    setPasswordData({
+      ...passwordData,
+      [e.target.name]: e.target.value
+    });
+  };
+
+  const togglePasswordVisibility = (field) => {
+    setShowPasswords({
+      ...showPasswords,
+      [field]: !showPasswords[field]
+    });
+  };
+
+  const handlePasswordSubmit = async () => {
+    if (passwordData.newPassword !== passwordData.confirmPassword) {
+      toast.error('New passwords do not match');
+      return;
+    }
+
+    if (passwordData.newPassword.length < 6) {
+      toast.error('New password must be at least 6 characters long');
+      return;
+    }
+
+    try {
+      setPasswordLoading(true);
+      const response = await apiService.changePassword({
+        currentPassword: passwordData.currentPassword,
+        newPassword: passwordData.newPassword
+      });
+
+      if (response.data.success) {
+        toast.success('Password changed successfully!');
+        setShowPasswordModal(false);
+        setPasswordData({
+          currentPassword: '',
+          newPassword: '',
+          confirmPassword: ''
+        });
+      } else {
+        toast.error(response.data.message || 'Failed to change password');
+      }
+    } catch (error) {
+      if (error.response?.data?.message) {
+        toast.error(error.response.data.message);
+      } else {
+        toast.error('Failed to change password');
+      }
+    } finally {
+      setPasswordLoading(false);
+    }
+  };
+
+  const closePasswordModal = () => {
+    setShowPasswordModal(false);
+    setPasswordData({
+      currentPassword: '',
+      newPassword: '',
+      confirmPassword: ''
+    });
+    setShowPasswords({
+      current: false,
+      new: false,
+      confirm: false
+    });
+  };
+
   // Image upload functions
   const handleImageClick = () => {
     fileInputRef.current?.click();
@@ -213,18 +297,25 @@ const Profile = () => {
     return username.split(' ').map(name => name[0]).join('').toUpperCase().slice(0, 2);
   };
 
-  if (!isAuthenticated || loading) {
+  if (!isAuthenticated) {
     return (
       <div className="profile-container">
-        <div className="loading-spinner">
-          {loading ? 'Loading profile...' : 'Redirecting to login...'}
-        </div>
+        <Loader color={document.documentElement.getAttribute("data-theme") === "dark" ? "#ffffff" : "#000000"} />
+      </div>
+    );
+  }
+
+  if (loading) {
+    return (
+      <div className="profile-container">
+        <Loader color={document.documentElement.getAttribute("data-theme") === "dark" ? "#ffffff" : "#000000"} />
       </div>
     );
   }
 
   return (
     <div className="profile-container">
+      {loading && <Loader color={document.documentElement.getAttribute("data-theme") === "dark" ? "#ffffff" : "#000000"} />}
       {/* Header */}
       <header className="profile-header">
         <div className="header-content">
@@ -251,7 +342,7 @@ const Profile = () => {
               )}
               {!isEditing && (
                 <div className="upload-overlay">
-                  <FaCamera size={20} />
+                  <FaCamera size={16} />
                   <span>Change Photo</span>
                 </div>
               )}
@@ -281,17 +372,56 @@ const Profile = () => {
               <>
                 <h3>Profile Details</h3>
                 <div className="details-grid">
-                  <p><strong>Email:</strong> {profileData.email}</p>
-                  <p><strong>Location:</strong> {profileData.location || "Not provided"}</p>
-                  <p><strong>Date of Birth:</strong> {profileData.dob ? new Date(profileData.dob).toLocaleDateString() : "Not provided"}</p>
-                  <p><strong>Status:</strong> {profileData.isAdmin ? "Admin" : "Student"}</p>
+                  <div className="detail-item">
+                    <div className="detail-icon">
+                      <FaEnvelope />
+                    </div>
+                    <div className="detail-content">
+                      <div className="detail-label">Email</div>
+                      <div className="detail-value">{profileData.email}</div>
+                    </div>
+                  </div>
+                  <div className="detail-item">
+                    <div className="detail-icon">
+                      <FaMapMarkerAlt />
+                    </div>
+                    <div className="detail-content">
+                      <div className="detail-label">Location</div>
+                      <div className="detail-value">{profileData.location || "Not provided"}</div>
+                    </div>
+                  </div>
+                  <div className="detail-item">
+                    <div className="detail-icon">
+                      <FaCalendarAlt />
+                    </div>
+                    <div className="detail-content">
+                      <div className="detail-label">Date of Birth</div>
+                      <div className="detail-value">{profileData.dob ? new Date(profileData.dob).toLocaleDateString() : "Not provided"}</div>
+                    </div>
+                  </div>
+                  <div className="detail-item">
+                    <div className="detail-icon">
+                      <FaUser />
+                    </div>
+                    <div className="detail-content">
+                      <div className="detail-label">Status</div>
+                      <div className="detail-value">{profileData.isAdmin ? "Admin" : "Student"}</div>
+                    </div>
+                  </div>
                 </div>
-                <button onClick={handleEdit} className="edit-btn">
-                  <FaEdit /> Edit Profile
-                </button>
-                <button onClick={toggleCertificates} className="edit-btn" style={{ marginTop:'0.5rem', background: certsOpen ? 'var(--accent-color)' : undefined }}>
-                  {certsOpen ? 'Hide Certificates' : 'View Certificates'}
-                </button>
+                <div className="action-buttons">
+                  <button onClick={handleEdit} className="edit-btn">
+                    <FaEdit /> Edit Profile
+                  </button>
+                  <button onClick={() => setShowPasswordModal(true)} className="password-btn">
+                    <FaLock /> Change Password
+                  </button>
+                </div>
+                {!profileData.isAdmin && (
+                  <button onClick={toggleCertificates} className="edit-btn" style={{ marginTop:'1rem', background: certsOpen ? 'var(--accent-color)' : undefined }}>
+                    {certsOpen ? 'Hide Certificates' : 'View Certificates'}
+                  </button>
+                )}
               </>
             ) : (
               <div className="edit-form">
@@ -301,10 +431,18 @@ const Profile = () => {
                   </button>
                   <small>Accepted formats: JPEG, PNG, GIF, WebP (Max: 3MB)</small>
                 </div>
-                <input type="text" name="username" value={editData.username} onChange={handleChange} className="edit-input" placeholder="Username" />
-                <input type="email" name="email" value={editData.email} onChange={handleChange} className="edit-input" placeholder="Email" />
-                <input type="text" name="location" value={editData.location} onChange={handleChange} className="edit-input" placeholder="Location" />
-                <input type="date" name="dob" value={editData.dob} onChange={handleChange} className="edit-input" />
+                <div className="form-group">
+                  <input type="text" name="username" value={editData.username} onChange={handleChange} className="edit-input" placeholder="Username" />
+                </div>
+                <div className="form-group">
+                  <input type="email" name="email" value={editData.email} onChange={handleChange} className="edit-input" placeholder="Email" />
+                </div>
+                <div className="form-group">
+                  <input type="text" name="location" value={editData.location} onChange={handleChange} className="edit-input" placeholder="Location" />
+                </div>
+                <div className="form-group">
+                  <input type="date" name="dob" value={editData.dob} onChange={handleChange} className="edit-input" />
+                </div>
                 <div className="edit-actions">
                   <button onClick={handleSave} className="save-btn"><FaSave /> Save</button>
                   <button onClick={handleCancel} className="cancel-btn"><FaTimes /> Cancel</button>
@@ -314,7 +452,7 @@ const Profile = () => {
           </div>
         </div>
       </div>
-      {certsOpen && (
+      {certsOpen && !profileData.isAdmin && (
         <div className="profile-certificates" style={{ margin:'2rem auto', maxWidth:800, width:'100%', background:'var(--bg-card)', border:'1px solid var(--border-light)', borderRadius:16, padding:'1.25rem 1.5rem' }}>
           <h2 style={{ marginTop:0 }}>Certificates</h2>
           {certsLoading && <p>Loading certificates...</p>}
@@ -322,33 +460,128 @@ const Profile = () => {
           {!certsLoading && !certsError && certificates.length === 0 && <p>No certificates available yet. They appear after events end.</p>}
           {!certsLoading && certificates.length > 0 && (
             <div style={{ overflowX:'auto' }}>
-              <table style={{ width:'100%', borderCollapse:'collapse' }}>
+              <table className="certificates-table">
                 <thead>
-                  <tr style={{ textAlign:'left', borderBottom:'1px solid var(--border-light)' }}>
-                    <th style={{ padding:'8px 10px' }}>Event</th>
-                    <th style={{ padding:'8px 10px' }}>Event Date</th>
-                    <th style={{ padding:'8px 10px' }}>Registered</th>
-                    <th style={{ padding:'8px 10px' }}>Action</th>
+                  <tr>
+                    <th>Event</th>
+                    <th>Event Date</th>
+                    <th>Registered</th>
+                    <th>Action</th>
                   </tr>
                 </thead>
                 <tbody>
                   {certificates.map(c => (
-                    <tr key={c.registrationId} style={{ borderBottom:'1px solid var(--border-light)' }}>
-                      <td style={{ padding:'8px 10px' }}>{c.eventTitle}</td>
-                      <td style={{ padding:'8px 10px' }}>{new Date(c.eventDate).toLocaleDateString()}</td>
-                      <td style={{ padding:'8px 10px' }}>{new Date(c.createdAt).toLocaleDateString()}</td>
-                      <td style={{ padding:'8px 10px' }}>
-                        <button className="edit-btn" onClick={() => handleDownloadCert(c.registrationId, c.eventTitle)} style={{ padding:'6px 12px' }}>Download</button>
+                    <tr key={c.registrationId}>
+                      <td>{c.eventTitle}</td>
+                      <td>{new Date(c.eventDate).toLocaleDateString()}</td>
+                      <td>{new Date(c.createdAt).toLocaleDateString()}</td>
+                      <td>
+                        <button className="download-btn" onClick={() => handleDownloadCert(c.registrationId, c.eventTitle)}>Download</button>
                       </td>
                     </tr>
                   ))}
                 </tbody>
               </table>
             </div>
-            
           )}
         </div>
-        
+      )}
+
+      {/* Password Change Modal */}
+      {showPasswordModal && (
+        <div className="password-modal-overlay" onClick={closePasswordModal}>
+          <div className="password-modal" onClick={(e) => e.stopPropagation()}>
+            <h3>Change Password</h3>
+            <div className="password-form">
+              <div className="form-group" style={{ position: 'relative' }}>
+                <input
+                  type={showPasswords.current ? 'text' : 'password'}
+                  name="currentPassword"
+                  value={passwordData.currentPassword}
+                  onChange={handlePasswordChange}
+                  className="edit-input"
+                  placeholder="Current Password"
+                />
+                <button
+                  type="button"
+                  onClick={() => togglePasswordVisibility('current')}
+                  style={{
+                    position: 'absolute',
+                    right: '12px',
+                    top: '50%',
+                    transform: 'translateY(-50%)',
+                    background: 'none',
+                    border: 'none',
+                    color: 'var(--text-muted)',
+                    cursor: 'pointer'
+                  }}
+                >
+                  {showPasswords.current ? <FaEyeSlash /> : <FaEye />}
+                </button>
+              </div>
+              <div className="form-group" style={{ position: 'relative' }}>
+                <input
+                  type={showPasswords.new ? 'text' : 'password'}
+                  name="newPassword"
+                  value={passwordData.newPassword}
+                  onChange={handlePasswordChange}
+                  className="edit-input"
+                  placeholder="New Password"
+                />
+                <button
+                  type="button"
+                  onClick={() => togglePasswordVisibility('new')}
+                  style={{
+                    position: 'absolute',
+                    right: '12px',
+                    top: '50%',
+                    transform: 'translateY(-50%)',
+                    background: 'none',
+                    border: 'none',
+                    color: 'var(--text-muted)',
+                    cursor: 'pointer'
+                  }}
+                >
+                  {showPasswords.new ? <FaEyeSlash /> : <FaEye />}
+                </button>
+              </div>
+              <div className="form-group" style={{ position: 'relative' }}>
+                <input
+                  type={showPasswords.confirm ? 'text' : 'password'}
+                  name="confirmPassword"
+                  value={passwordData.confirmPassword}
+                  onChange={handlePasswordChange}
+                  className="edit-input"
+                  placeholder="Confirm New Password"
+                />
+                <button
+                  type="button"
+                  onClick={() => togglePasswordVisibility('confirm')}
+                  style={{
+                    position: 'absolute',
+                    right: '12px',
+                    top: '50%',
+                    transform: 'translateY(-50%)',
+                    background: 'none',
+                    border: 'none',
+                    color: 'var(--text-muted)',
+                    cursor: 'pointer'
+                  }}
+                >
+                  {showPasswords.confirm ? <FaEyeSlash /> : <FaEye />}
+                </button>
+              </div>
+            </div>
+            <div className="password-actions">
+              <button onClick={closePasswordModal} className="cancel-btn" disabled={passwordLoading}>
+                Cancel
+              </button>
+              <button onClick={handlePasswordSubmit} className="save-btn" disabled={passwordLoading}>
+                {passwordLoading ? 'Changing...' : 'Change Password'}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
       <Footer />
       <ToastContainer 

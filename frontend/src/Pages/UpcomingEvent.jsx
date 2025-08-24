@@ -4,6 +4,8 @@ import { Link } from "react-router-dom";
 import "../CSS/upEventPage.css";
 import Footer from "../Components/Footer";
 import Header from "../Components/Header";
+import Loader from "../Components/loader";
+import { FaChevronLeft, FaChevronRight } from "react-icons/fa";
 
 function EventsPage() {
   const backend_link = import.meta.env.VITE_BACKEND_LINK;
@@ -17,9 +19,11 @@ function EventsPage() {
   const [isShrunk, setIsShrunk] = useState(false);
   const [sortOption, setSortOption] = useState("new"); // 'new' | 'popular' | 'relevant'
   const [sortDir, setSortDir] = useState("desc"); // 'asc' | 'desc'
+  const [currentPage, setCurrentPage] = useState(0);
+  const [perPage, setPerPage] = useState(12);
 
   const CACHE_KEY = "events_cache";
-  const CACHE_TTL = 1000 * 60 * 10; // 10 minutes
+  const CACHE_TTL = 1000 * 60 * 2; // 2 minutes instead of 10 minutes for more frequent updates
 
   // Extract unique categories
   const categories = [
@@ -81,6 +85,34 @@ function EventsPage() {
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
+  // Force refresh events by clearing cache and refetching
+  const handleRefresh = async () => {
+    setLoading(true);
+    localStorage.removeItem(CACHE_KEY); // Clear cache
+    
+    try {
+      const response = await axios.get(`${backend_link}/api/events`);
+      if (response.data.success) {
+        const eventData = response.data.events || [];
+        setEvents(eventData);
+        setFilteredEvents(eventData);
+        
+        // Save new data to localStorage
+        localStorage.setItem(
+          CACHE_KEY,
+          JSON.stringify({ data: eventData, timestamp: Date.now() })
+        );
+      } else {
+        setError("Failed to load events");
+      }
+    } catch (err) {
+      console.error(err);
+      setError("An error occurred while fetching events");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   // Combined search and filters (title, category, fee)
   useEffect(() => {
     const q = searchQuery.trim().toLowerCase();
@@ -139,9 +171,10 @@ function EventsPage() {
     }
 
     setFilteredEvents(working);
+    setCurrentPage(0); // reset page when filters change
   }, [searchQuery, categoryFilter, feeFilter, events, sortOption, sortDir]);
 
-  if (loading) return <p className="eventsPage-loading">Loading events...</p>;
+  if (loading) return <Loader color={document.documentElement.getAttribute("data-theme") === "dark" ? "#ffffff" : "#000000"} />;
   if (error) return <p className="eventsPage-error">{error}</p>;
   return (
     <div className="eventsPage-container">
@@ -258,6 +291,28 @@ function EventsPage() {
                 {sortDir === "asc" ? "↑" : "↓"}
               </button>
             </div>
+
+            {/* Refresh Button */}
+            <div className="fx-item">
+              <button
+                type="button"
+                className="fx-refreshBtn"
+                onClick={handleRefresh}
+                disabled={loading}
+                title="Refresh events"
+                aria-label="Refresh events"
+                style={{
+                  padding: "8px 12px",
+                  border: "1px solid #ccc",
+                  borderRadius: "6px",
+                  background: "#fff",
+                  cursor: loading ? "not-allowed" : "pointer",
+                  opacity: loading ? 0.6 : 1
+                }}
+              >
+                {loading ? "⟳" : "🔄"}
+              </button>
+            </div>
           </div>
         </div>
 
@@ -266,7 +321,9 @@ function EventsPage() {
         )}
 
         <div className="eventCard-grid">
-          {filteredEvents.map((event, index) => {
+          {filteredEvents
+            .slice(currentPage * perPage, (currentPage + 1) * perPage)
+            .map((event, index) => {
             const startDate = event.date ? new Date(event.date) : null;
             const endDate = event.end_date ? new Date(event.end_date) : null;
 
@@ -345,6 +402,136 @@ function EventsPage() {
             );
           })}
         </div>
+
+        {/* Pagination Controls */}
+        {filteredEvents.length > perPage && (
+          <div className="pagination-wrap" style={{ 
+            display: 'flex', 
+            justifyContent: 'space-between', 
+            alignItems: 'center', 
+            margin: '2rem auto',
+            maxWidth: '1200px',
+            padding: '0 1rem',
+            flexWrap: 'wrap',
+            gap: '1rem'
+          }}>
+            <div className="per-page" style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.5rem',
+              fontSize: '0.9rem'
+            }}>
+              <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                Show
+                <select
+                  value={perPage}
+                  onChange={(e) => {
+                    setPerPage(Number(e.target.value));
+                    setCurrentPage(0);
+                  }}
+                  style={{
+                    padding: '4px 8px',
+                    borderRadius: '4px',
+                    border: '1px solid var(--border-light)',
+                    background: 'var(--bg-primary)',
+                    color: 'var(--text-primary)'
+                  }}
+                >
+                  {[6, 12, 18, 24].map((v) => (
+                    <option key={v} value={v}>
+                      {v}
+                    </option>
+                  ))}
+                </select>
+                events
+              </label>
+            </div>
+            
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+              <button
+                className="btn btn-outline"
+                onClick={() => setCurrentPage((p) => Math.max(0, p - 1))}
+                disabled={currentPage === 0}
+                style={{
+                  padding: '8px 12px',
+                  border: '1px solid var(--border-light)',
+                  background: currentPage === 0 ? 'var(--bg-secondary)' : 'var(--bg-primary)',
+                  color: currentPage === 0 ? 'var(--text-muted)' : 'var(--text-primary)',
+                  borderRadius: '6px',
+                  cursor: currentPage === 0 ? 'not-allowed' : 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '4px'
+                }}
+              >
+                <FaChevronLeft size={12} /> Prev
+              </button>
+              
+              <div className="page-numbers" style={{ display: 'flex', gap: '2px' }}>
+                {Array.from({
+                  length: Math.ceil(filteredEvents.length / perPage),
+                }).map((_, i) => (
+                  <button
+                    key={i}
+                    className={
+                      "page-btn" + (i === currentPage ? " active" : "")
+                    }
+                    onClick={() => setCurrentPage(i)}
+                    style={{
+                      padding: '8px 12px',
+                      border: '1px solid var(--border-light)',
+                      background: i === currentPage ? 'var(--accent-color)' : 'var(--bg-primary)',
+                      color: i === currentPage ? 'white' : 'var(--text-primary)',
+                      borderRadius: '4px',
+                      cursor: 'pointer',
+                      minWidth: '36px'
+                    }}
+                  >
+                    {i + 1}
+                  </button>
+                ))}
+              </div>
+              
+              <div className="page-info" style={{ 
+                fontSize: '0.9rem', 
+                color: 'var(--text-muted)',
+                minWidth: '80px',
+                textAlign: 'center'
+              }}>
+                Page {currentPage + 1} / {Math.ceil(filteredEvents.length / perPage)}
+              </div>
+              
+              <button
+                className="btn btn-outline"
+                onClick={() =>
+                  setCurrentPage((p) =>
+                    Math.min(
+                      Math.ceil(filteredEvents.length / perPage) - 1,
+                      p + 1
+                    )
+                  )
+                }
+                disabled={
+                  currentPage >=
+                  Math.ceil(filteredEvents.length / perPage) - 1
+                }
+                style={{
+                  padding: '8px 12px',
+                  border: '1px solid var(--border-light)',
+                  background: currentPage >= Math.ceil(filteredEvents.length / perPage) - 1 ? 'var(--bg-secondary)' : 'var(--bg-primary)',
+                  color: currentPage >= Math.ceil(filteredEvents.length / perPage) - 1 ? 'var(--text-muted)' : 'var(--text-primary)',
+                  borderRadius: '6px',
+                  cursor: currentPage >= Math.ceil(filteredEvents.length / perPage) - 1 ? 'not-allowed' : 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '4px'
+                }}
+              >
+                Next <FaChevronRight size={12} />
+              </button>
+            </div>
+          </div>
+        )}
       </main>
       <Footer />
     </div>

@@ -4,12 +4,14 @@ import { useParams } from "react-router-dom";
 import "../CSS/EventAttendee.css";
 import Header from "../Components/Header";
 import Footer from "../Components/Footer";
+import Loader from "../Components/loader";
 import defaultavator from "../assets/img/defaultavator.png";
 import { showErrorToast, showSuccessToast } from "../utils/toastUtils";
 
 function EventAttendee() {
   const { id } = useParams();
   const [users, setUsers] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [userToBan, setUserToBan] = useState(null);
   const backend = import.meta.env.VITE_BACKEND_LINK;
@@ -25,6 +27,8 @@ function EventAttendee() {
       }
     } catch (error) {
       console.error(error);
+    } finally {
+      setLoading(false);
     }
   };
   useEffect(() => {
@@ -79,6 +83,7 @@ function EventAttendee() {
   };
   return (
     <div className="page-wrapper">
+      {loading && <Loader color={document.documentElement.getAttribute("data-theme") === "dark" ? "#ffffff" : "#000000"} />}
       <Header />
       <div className="content-wrapper">
         <div className="attendees-container">

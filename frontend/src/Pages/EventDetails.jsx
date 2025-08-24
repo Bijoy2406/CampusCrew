@@ -3,10 +3,11 @@ import { useParams, useNavigate } from "react-router-dom";
 import Header from "../Components/Header";
 import Footer from "../Components/Footer";
 import { apiService } from "../utils/apiService";
+import { clearEventCaches } from "../utils/cacheUtils";
 import { useAuth } from "../contexts/AuthContext";
 import { ToastContainer } from "react-toastify";
 import { showErrorToast, showSuccessToast } from "../utils/toastUtils";
-import Loader from "../Components/loader_login";
+import Loader from "../Components/loader";
 import "../CSS/upEventPage.css";
 import "../CSS/eventDetails.css";
 import axios from "axios";
@@ -81,6 +82,10 @@ function EventDetails() {
       const { data } = await apiService.deleteEvent(event._id);
       if (data.success) {
         showSuccessToast("Event deleted");
+        
+        // Clear events cache to ensure deleted event is removed from listings
+        clearEventCaches();
+        
         navigate("/upcoming-events");
       } else {
         setRegError(data.message || "Delete failed");

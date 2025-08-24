@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate, NavLink } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
 import { useTheme } from "../contexts/ThemeContext";
 import logo from "../assets/img/campuscrew.png";
@@ -17,7 +17,7 @@ function Header() {
   const mobileDropdownRef = useRef(null);
   const mobileMenuRef = useRef(null);
   const isAdmin = user && user.isAdmin; // Use isAdmin property from backend data
-  
+  const navigate = useNavigate();
   const toggleDropdown = () => {
     setIsDropdownOpen(!isDropdownOpen);
   };
@@ -47,28 +47,39 @@ function Header() {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
         setIsDropdownOpen(false);
       }
-      if (mobileDropdownRef.current && !mobileDropdownRef.current.contains(event.target)) {
+      if (
+        mobileDropdownRef.current &&
+        !mobileDropdownRef.current.contains(event.target)
+      ) {
         setIsMobileDropdownOpen(false);
       }
-      if (mobileMenuRef.current && !mobileMenuRef.current.contains(event.target)) {
+      if (
+        mobileMenuRef.current &&
+        !mobileMenuRef.current.contains(event.target)
+      ) {
         setIsMobileMenuOpen(false);
       }
     };
 
-    document.addEventListener('mousedown', handleClickOutside);
+    document.addEventListener("mousedown", handleClickOutside);
     return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener("mousedown", handleClickOutside);
     };
   }, []);
 
   // Get user's initials if no profile picture
   const getUserInitials = (user) => {
     if (user?.username) {
-      return user.username.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
+      return user.username
+        .split(" ")
+        .map((n) => n[0])
+        .join("")
+        .toUpperCase()
+        .slice(0, 2);
     }
-    return user?.email?.charAt(0).toUpperCase() || 'U';
+    return user?.email?.charAt(0).toUpperCase() || "U";
   };
-  
+
   return (
     <>
       <header className="home-header">
@@ -77,57 +88,57 @@ function Header() {
             <img src={logo} alt="Logo" style={{ height: "40px" }} />
           </Link>
         </div>
-        
+
         {/* Desktop Navigation */}
         <nav className="main-nav desktop-nav">
           {isAuthenticated ? (
             <>
-              <Link to="/upcoming-events" className="nav-link">
+              <NavLink to="/upcoming-events" className="nav-link">
                 Upcoming Events
-              </Link>
+              </NavLink>
               {isAdmin && (
-                <Link to="/create-event" className="nav-link">
+                <NavLink to="/create-event" className="nav-link">
                   Create Event
-                </Link>
+                </NavLink>
               )}
               {!isAdmin && (
-                <Link to="/joined-events" className="nav-link">
+                <NavLink to="/joined-events" className="nav-link">
                   Joined Events
-                </Link>
+                </NavLink>
               )}
-              <Link to="/about" className="nav-link">
+              <NavLink to="/about" className="nav-link">
                 About
-              </Link>
-              <Link to="/contact" className="nav-link">
+              </NavLink>
+              <NavLink to="/contact" className="nav-link">
                 Contact Us
-              </Link>
+              </NavLink>
               {isAdmin && (
-                <Link to="/dashboard" className="nav-link">
+                <NavLink to="/dashboard" className="nav-link">
                   Dashboard
-                </Link>
+                </NavLink>
               )}
-              
+
               {/* Theme Toggle Button */}
-              <button 
+              <button
                 className="theme-toggle"
                 onClick={toggleTheme}
-                aria-label={`Switch to ${isDarkMode ? 'light' : 'dark'} mode`}
-                title={`Switch to ${isDarkMode ? 'light' : 'dark'} mode`}
+                aria-label={`Switch to ${isDarkMode ? "light" : "dark"} mode`}
+                title={`Switch to ${isDarkMode ? "light" : "dark"} mode`}
               >
-                {isDarkMode ? '☀️' : '🌙'}
+                {isDarkMode ? "☀️" : "🌙"}
               </button>
-              
+
               {/* Profile Dropdown */}
               <div className="profile-dropdown" ref={dropdownRef}>
-                <button 
-                  className="profile-button" 
-                  onClick={toggleDropdown}
+                <button
+                  className="profile-button"
+                  onClick={() => navigate("/profile")}
                   aria-label="Profile menu"
                 >
                   {user?.profilePic ? (
-                    <img 
-                      src={user.profilePic} 
-                      alt="Profile" 
+                    <img
+                      src={user.profilePic}
+                      alt="Profile"
                       className="profile-image"
                     />
                   ) : (
@@ -136,33 +147,20 @@ function Header() {
                     </div>
                   )}
                 </button>
-                
-                {isDropdownOpen && (
-                  <div className="dropdown-menu">
-                    <Link 
-                      to="/profile" 
-                      className="dropdown-item"
-                      onClick={() => setIsDropdownOpen(false)}
-                    >
-                      <span className="dropdown-icon">👤</span>
-                      <span className="btn-txt">Profile</span>
-                    </Link>
-                  </div>
-                )}
               </div>
             </>
           ) : (
             <>
               {/* Theme Toggle Button for non-authenticated users */}
-              <button 
+              <button
                 className="theme-toggle"
                 onClick={toggleTheme}
-                aria-label={`Switch to ${isDarkMode ? 'light' : 'dark'} mode`}
-                title={`Switch to ${isDarkMode ? 'light' : 'dark'} mode`}
+                aria-label={`Switch to ${isDarkMode ? "light" : "dark"} mode`}
+                title={`Switch to ${isDarkMode ? "light" : "dark"} mode`}
               >
-                {isDarkMode ? '☀️' : '🌙'}
+                {isDarkMode ? "☀️" : "🌙"}
               </button>
-              
+
               <Link to="/login" className="nav-link">
                 Log In
               </Link>
@@ -179,15 +177,15 @@ function Header() {
           {isAuthenticated && (
             <div className="mobile-profile">
               <div className="profile-dropdown" ref={mobileDropdownRef}>
-                <button 
-                  className="profile-button" 
+                <button
+                  className="profile-button"
                   onClick={toggleMobileDropdown}
                   aria-label="Profile menu"
                 >
                   {user?.profilePic ? (
-                    <img 
-                      src={user.profilePic} 
-                      alt="Profile" 
+                    <img
+                      src={user.profilePic}
+                      alt="Profile"
                       className="profile-image"
                     />
                   ) : (
@@ -196,11 +194,11 @@ function Header() {
                     </div>
                   )}
                 </button>
-                
+
                 {isMobileDropdownOpen && (
                   <div className="dropdown-menu">
-                    <Link 
-                      to="/profile" 
+                    <Link
+                      to="/profile"
                       className="dropdown-item"
                       onClick={() => setIsMobileDropdownOpen(false)}
                     >
@@ -212,10 +210,10 @@ function Header() {
               </div>
             </div>
           )}
-          
+
           {/* Hamburger Menu Button */}
-          <button 
-            className="mobile-menu-toggle" 
+          <button
+            className="mobile-menu-toggle"
             onClick={toggleMobileMenu}
             aria-label="Toggle navigation menu"
           >
@@ -227,23 +225,20 @@ function Header() {
 
         {/* Mobile Menu Overlay */}
         {isMobileMenuOpen && (
-          <div 
-            className="mobile-menu-overlay" 
-            ref={mobileMenuRef}
-          >
+          <div className="mobile-menu-overlay" ref={mobileMenuRef}>
             <div className="mobile-menu-content">
               {isAuthenticated ? (
                 <>
-                  <Link 
-                    to="/upcoming-events" 
+                  <Link
+                    to="/upcoming-events"
                     className="mobile-nav-link"
                     onClick={closeMobileMenu}
                   >
                     Upcoming Events
                   </Link>
                   {isAdmin && (
-                    <Link 
-                      to="/create-event" 
+                    <Link
+                      to="/create-event"
                       className="mobile-nav-link"
                       onClick={closeMobileMenu}
                     >
@@ -251,77 +246,81 @@ function Header() {
                     </Link>
                   )}
                   {!isAdmin && (
-                    <Link 
-                      to="/joined-events" 
+                    <Link
+                      to="/joined-events"
                       className="mobile-nav-link"
                       onClick={closeMobileMenu}
                     >
                       Joined Events
                     </Link>
                   )}
-                  <Link 
-                    to="/about" 
+                  <Link
+                    to="/about"
                     className="mobile-nav-link"
                     onClick={closeMobileMenu}
                   >
                     About
                   </Link>
-                  <Link 
-                    to="/contact" 
+                  <Link
+                    to="/contact"
                     className="mobile-nav-link"
                     onClick={closeMobileMenu}
                   >
                     Contact Us
                   </Link>
                   {isAdmin && (
-                    <Link 
-                      to="/dashboard" 
+                    <Link
+                      to="/dashboard"
                       className="mobile-nav-link"
                       onClick={closeMobileMenu}
                     >
                       Dashboard
                     </Link>
                   )}
-                  
+
                   {/* Theme Toggle in Mobile Menu */}
-                  <button 
+                  <button
                     className="mobile-theme-toggle"
                     onClick={() => {
                       toggleTheme();
                       closeMobileMenu();
                     }}
-                    aria-label={`Switch to ${isDarkMode ? 'light' : 'dark'} mode`}
+                    aria-label={`Switch to ${
+                      isDarkMode ? "light" : "dark"
+                    } mode`}
                   >
-                    {isDarkMode ? '☀️ Light Mode' : '🌙 Dark Mode'}
+                    {isDarkMode ? "☀️ Light Mode" : "🌙 Dark Mode"}
                   </button>
                 </>
               ) : (
                 <>
-                  <Link 
-                    to="/login" 
+                  <Link
+                    to="/login"
                     className="mobile-nav-link"
                     onClick={closeMobileMenu}
                   >
                     Log In
                   </Link>
-                  <Link 
-                    to="/login" 
+                  <Link
+                    to="/login"
                     className="mobile-nav-button"
                     onClick={closeMobileMenu}
                   >
                     Get Started
                   </Link>
-                  
+
                   {/* Theme Toggle in Mobile Menu */}
-                  <button 
+                  <button
                     className="mobile-theme-toggle"
                     onClick={() => {
                       toggleTheme();
                       closeMobileMenu();
                     }}
-                    aria-label={`Switch to ${isDarkMode ? 'light' : 'dark'} mode`}
+                    aria-label={`Switch to ${
+                      isDarkMode ? "light" : "dark"
+                    } mode`}
                   >
-                    {isDarkMode ? '☀️ Light Mode' : '🌙 Dark Mode'}
+                    {isDarkMode ? "☀️ Light Mode" : "🌙 Dark Mode"}
                   </button>
                 </>
               )}

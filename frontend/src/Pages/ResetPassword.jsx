@@ -4,6 +4,7 @@ import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import PasswordChecklist from "react-password-checklist";
 import '../CSS/ResetPassword.css';
+import Loader from "../Components/loader";
 
 function ResetPassword() {
     const backend_link = import.meta.env.VITE_BACKEND_LINK;
@@ -16,6 +17,12 @@ function ResetPassword() {
     const [isValid, setIsValid] = useState(false);
     const [tokenValid, setTokenValid] = useState(null);
     const [loading, setLoading] = useState(false);
+    const [pageLoading, setPageLoading] = useState(true);
+
+    useEffect(() => {
+        const timer = setTimeout(() => setPageLoading(false), 800);
+        return () => clearTimeout(timer);
+    }, []);
 
     const checkTokenValidity = async () => {
         try {
@@ -120,6 +127,7 @@ function ResetPassword() {
 
     return (
         <div className="reset-password-container">
+            {pageLoading && <Loader color={document.documentElement.getAttribute("data-theme") === "dark" ? "#ffffff" : "#000000"} />}
             <h4>Reset Password</h4>
             <form onSubmit={handleSubmit} className="reset-password-form">
                 {/* New Password Field */}

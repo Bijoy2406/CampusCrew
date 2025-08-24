@@ -4,6 +4,7 @@ const cors = require('cors')
 const cookieParser = require('cookie-parser')
 require('dotenv').config()
 const MongDB = require('./database')
+const { startAutomaticCleanup } = require('./utils/eventCleanup')
 const port = process.env.PORT || 8000
 const frontend_url = process.env.frontend_url
 
@@ -44,6 +45,8 @@ app.get('/', (req, res) => {
 
 app.listen(port, () => {
     console.log(`Backend is running on port ${port}`)
+    // Start the automatic event cleanup service
+    startAutomaticCleanup();
 })
 
 

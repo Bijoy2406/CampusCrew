@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { v4 as uuidv4 } from 'uuid'; // Import uuid for unique IDs
 import '../CSS/VerifyEmail.css';
+import Loader from "../Components/loader";
 
 const VerifyEmail = () => {
   const backend_link = import.meta.env.VITE_BACKEND_LINK;
@@ -11,6 +12,7 @@ const VerifyEmail = () => {
     success: null,
     message: '',
   });
+  const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -27,6 +29,8 @@ const VerifyEmail = () => {
           success: false,
           message: error.response?.data?.message || 'Error verifying your email.',
         });
+      } finally {
+        setLoading(false);
       }
     })();
   }, []); // Empty dependency array
@@ -47,6 +51,7 @@ const VerifyEmail = () => {
 
   return (
     <div className="verify-email-container">
+      {loading && <Loader color={document.documentElement.getAttribute("data-theme") === "dark" ? "#ffffff" : "#000000"} />}
       <div className="verification-box">
         <h2>Email Verification</h2>
 

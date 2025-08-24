@@ -39,7 +39,7 @@
   --gradient-accent: linear-gradient(135deg, #ff6b6b 0%, #ee5a24 100%);
   
   /* Website gradients - Black and White */
-  --gradient-overlay: linear-gradient(135deg, rgba(255, 255, 255, 0.95), rgba(240, 240, 240, 0.9));
+  --gradient-overlay: linear-gradient(135deg, rgba(96, 75, 203, 0.7), rgba(180, 170, 233,.8));
   --gradient-website: linear-gradient(135deg, #ffffff, #f0f0f0);
 
   /* Header Specific - Keep colorful */
