@@ -90,6 +90,9 @@ export const apiService = {
   registerForEvent: (payload) => api.post('/register-event', payload),
   getUserRegistrations: (userId) => api.get(`/registrations/user/${userId}`),
   getEventRegistrations: (eventId) => api.get(`/registrations/event/${eventId}`),
+  // Certificate APIs
+  getUserCertificates: (userId) => api.get(`/certificates/user/${userId}`),
+  downloadCertificate: (registrationId) => api.get(`/certificates/${registrationId}/download`, { responseType: 'blob' }),
 };
 
 export default api;

@@ -3,6 +3,8 @@ const router = express.Router()
 
 const Registration = require('../models/RegistrationModel')
 const Events = require('../models/EventModel')
+const { generateCertificate, buildCertificateSVG } = require('../utils/certificateGenerator');
+const jwt = require('jsonwebtoken');
 const { v4: uuidv4 } = require('uuid');
 const SSLCommerzPayment = require('sslcommerz-lts');
 const bkashAusth = require('../middleware/bkashAusth');
@@ -213,6 +215,142 @@ router.get('/success/:tran_id', async (req, res) => {
 
 
 module.exports = router
+
+// ================= Certificate Endpoints =================
+// (Placed after module.exports for minimal diff; could be refactored into own router)
+
+// Middleware to verify user token for certificate routes
+function verifyUserToken(req, res, next) {
+    const auth = req.headers.authorization;
+    if (!auth) return res.status(401).json({ success: false, message: 'No token' });
+    try {
+        const token = auth.split(' ')[1];
+        const decoded = jwt.verify(token, 'secret_ecom');
+        req.authUserId = decoded.user.id;
+        next();
+    } catch (e) {
+        return res.status(401).json({ success: false, message: 'Invalid token' });
+    }
+}
+
+// List certificates (ended events) for a user
+router.get('/certificates/user/:userId', verifyUserToken, async (req, res) => {
+    try {
+        const { userId } = req.params;
+        if (userId !== req.authUserId) return res.status(403).json({ success: false, message: 'Forbidden' });
+        const regs = await Registration.find({ userId, is_registered: true }).populate('eventId');
+        const now = Date.now();
+        const certificates = regs
+            .filter(r => r.eventId && new Date(r.eventId.date).getTime() < now) // past events only
+            .map(r => ({
+                registrationId: r._id,
+                eventId: r.eventId._id,
+                eventTitle: r.eventId.title,
+                eventDate: r.eventId.date,
+                eventLocation: r.eventId.location,
+                organizer: r.eventId.organizer,
+                certificateId: r._id.toString(),
+                createdAt: r.createdAt
+            }));
+        return res.json({ success: true, certificates });
+    } catch (e) {
+        return res.status(500).json({ success: false, message: e.message });
+    }
+});
+
+// Download a certificate PDF (SVG design)
+router.get('/certificates/:registrationId/download', verifyUserToken, async (req, res) => {
+    try {
+        const { registrationId } = req.params;
+        const reg = await Registration.findById(registrationId).populate('eventId').populate('userId');
+        if (!reg) return res.status(404).json({ success: false, message: 'Registration not found' });
+        if (reg.userId._id.toString() !== req.authUserId) return res.status(403).json({ success: false, message: 'Forbidden' });
+        if (!reg.eventId) return res.status(404).json({ success: false, message: 'Event missing' });
+        if (new Date(reg.eventId.date).getTime() > Date.now()) return res.status(400).json({ success: false, message: 'Event not finished yet' });
+
+    const userName = reg.userId.username || 'Participant';
+    const eventTitle = reg.eventId.title || 'Event';
+    const eventDate = new Date(reg.eventId.date).toLocaleDateString();
+    const eventLocation = reg.eventId.location || '';
+    const orgName = reg.eventId.organizer || 'CampusCrew';
+        // Fetch up to two admins for signatures
+        const admins = await require('../models/UserModel').find({ isAdmin: true }).limit(2).lean();
+        const sigLeftName = admins[0]?.username || 'Organizer';
+        const sigLeftTitle = 'Organizer';
+        const sigCenterName = admins[1]?.username || admins[0]?.username || 'Coordinator';
+        const sigCenterTitle = 'Coordinator';
+        // Embed logo as base64 (reads frontend asset). Adjust path if deployed differently.
+        const fs = require('fs');
+        const path = require('path');
+        let logoData = null;
+        try {
+            const logoPath = path.join(__dirname, '../../frontend/src/assets/img/campuscrew.png');
+            const buf = fs.readFileSync(logoPath);
+            logoData = buf.toString('base64');
+        } catch (e) {
+            // silent fail; logo optional
+        }
+        const issueDate = new Date().toLocaleDateString();
+        const certId = reg._id.toString();
+
+        res.setHeader('Content-Type', 'application/pdf');
+        const safeTitle = eventTitle.replace(/[^a-z0-9]/gi, '_');
+        res.setHeader('Content-Disposition', `attachment; filename=Certificate_${safeTitle}_${certId.substring(0,6)}.pdf`);
+        // Build QR (URL that serves PNG download) and pass into PDF
+        const QRCode = require('qrcode');
+    const verifyUrl = `${process.env.backend_url || ''}/api/certificates/${registrationId}/image`;
+        let qrDataUrl = null;
+        try { qrDataUrl = await QRCode.toDataURL(verifyUrl, { margin: 1, width: 300 }); } catch(e) {}
+    generateCertificate(res, { userName, eventTitle, eventDate, issueDate, certId, eventLocation, orgName, sigLeftName, sigLeftTitle, sigCenterName, sigCenterTitle, logoData, qrDataUrl });
+    } catch (e) {
+        return res.status(500).json({ success: false, message: e.message });
+    }
+});
+
+// Certificate PNG endpoint (public or protected? keep protected to ensure ownership)
+router.get('/certificates/:registrationId/image', async (req, res) => {
+    try {
+        const { registrationId } = req.params;
+        const reg = await Registration.findById(registrationId).populate('eventId').populate('userId');
+        if (!reg) return res.status(404).json({ success: false, message: 'Not found' });
+    // Public access for verification (no auth). If you want limited access, re-add auth check.
+        if (new Date(reg.eventId.date).getTime() > Date.now()) return res.status(400).json({ success: false, message: 'Event not finished yet' });
+
+        const fs = require('fs');
+        const path = require('path');
+        let logoData = null;
+        try {
+            const logoPath = path.join(__dirname, '../../frontend/src/assets/img/campuscrew.png');
+            logoData = fs.readFileSync(logoPath).toString('base64');
+        } catch(e) {}
+
+        const userName = reg.userId.username || 'Participant';
+        const eventTitle = reg.eventId.title || 'Event';
+        const eventDate = new Date(reg.eventId.date).toLocaleDateString();
+        const eventLocation = reg.eventId.location || '';
+        const orgName = reg.eventId.organizer || 'CampusCrew';
+        const issueDate = new Date().toLocaleDateString();
+        const certId = reg._id.toString();
+
+        const QRCode = require('qrcode');
+    const verifyUrl = `${process.env.backend_url || ''}/api/certificates/${registrationId}/image`;
+        let qrDataUrl = null;
+        try { qrDataUrl = await QRCode.toDataURL(verifyUrl, { margin:1, width:300 }); } catch(e) {}
+
+        const { buildCertificateSVG } = require('../utils/certificateGenerator');
+        const svg = buildCertificateSVG({ userName, eventTitle, eventDate, issueDate, certId, eventLocation, orgName, logoData, qrDataUrl });
+
+        // Convert SVG -> PNG using sharp
+        const sharp = require('sharp');
+        const pngBuffer = await sharp(Buffer.from(svg)).png().toBuffer();
+        res.setHeader('Content-Type', 'image/png');
+        res.setHeader('Content-Disposition', `inline; filename=Certificate_${certId.substring(0,6)}.png`);
+        return res.send(pngBuffer);
+    } catch(e) {
+        return res.status(500).json({ success:false, message: e.message });
+    }
+});
+
 
 
 
