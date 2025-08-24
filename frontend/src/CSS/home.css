@@ -1,8 +1,5 @@
 /* General Styles */
-.home-container {
-  font-family: 'Inter', sans-serif;
-  color: #333;
-}
+.home-container { font-family: 'Inter', sans-serif; color: var(--text-primary); }
 
 /* Header */
 .home-header {
@@ -231,13 +228,7 @@
 }
 
 /* Hero Section */
-.hero-section {
-  text-align: center;
-  padding: 100px 20px;
-  background: var(--bg-primary);
-  color: var(--text-primary);
-  border-bottom: 1px solid var(--border-light);
-}
+.hero-section { text-align:center; padding:100px 20px; background:var(--bg-primary); color:var(--text-primary); border-bottom:1px solid var(--border-light); }
 
 .hero-title {
   font-size: 3rem;
@@ -322,12 +313,7 @@
 }
 
 /* CTA Section */
-.cta-section {
-  background-color: var(--bg-secondary);
-  padding: 80px 20px;
-  text-align: center;
-  border-top: 1px solid var(--border-light);
-}
+.cta-section { background:var(--bg-secondary); padding:80px 20px; text-align:center; border-top:1px solid var(--border-light); }
 
 .cta-title {
   font-size: 2.5rem;
@@ -342,12 +328,7 @@
 }
 
 /* Footer */
-.home-footer {
-  background-color: var(--text-primary);
-  color: var(--bg-primary);
-  padding: 40px 20px;
-  text-align: center;
-}
+.home-footer { background:var(--text-primary); color:var(--bg-primary); padding:40px 20px; text-align:center; }
 
 .footer-links {
   margin-top: 10px;
