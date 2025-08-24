@@ -29,5 +29,6 @@
     "sslcommerz-lts": "^1.2.0",
     "svg-to-pdfkit": "^0.1.8",
     "uuid": "^11.1.0"
+
   }
 }

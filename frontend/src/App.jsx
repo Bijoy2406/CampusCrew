@@ -13,28 +13,26 @@ import EventDetails from "./Pages/EventDetails.jsx";
 import EditEvent from "./Pages/EditEvent.jsx";
 import Success from "./Pages/Success.jsx";
 import Failure from "./Pages/Failure.jsx";
-import Forbidden from './Pages/Forbidden.jsx';
-import NotFound from './Pages/NotFound.jsx';
-import Dashboard from './Pages/Dashboard.jsx';
-import VerifyEmail from './Pages/VerifyEmail.jsx';
-import ForgotPassword from './Pages/ForgotPassword.jsx';
-import ResetPassword from './Pages/ResetPassword.jsx';
+import Forbidden from "./Pages/Forbidden.jsx";
+import NotFound from "./Pages/NotFound.jsx";
+import Dashboard from "./Pages/Dashboard.jsx";
+import VerifyEmail from "./Pages/VerifyEmail.jsx";
+import ForgotPassword from "./Pages/ForgotPassword.jsx";
+import ResetPassword from "./Pages/ResetPassword.jsx";
 import EventAttendee from "./Pages/EventAttendee.jsx";
 import ChatBot from "./Components/ChatBot.jsx";
-
-
+import AdminSignup from "./Pages/AdminSignup.jsx";
 
 function App() {
   const { isAuthenticated, loading, user } = useAuth();
 
   if (loading) {
     return <div>Loading...</div>;
-     // Or a proper spinner component
+    // Or a proper spinner component
   }
 
   return (
     <>
-      
       <Routes>
         <Route path="/" element={<Home />} />
         <Route path="/login" element={<Login />} />
@@ -118,6 +116,7 @@ function App() {
         <Route path="/forbidden" element={<Forbidden />} />
         <Route path="/event-attendee/:id" element={<EventAttendee />} />
         <Route path="*" element={<NotFound />} />
+        <Route path="/admin/signup" element={<AdminSignup />} />
       </Routes>
       <ChatBot />
     </>
