@@ -6,10 +6,10 @@ const upload = require('../utils/multer')
 const multer = require('multer')
 const cloudinary = require('../utils/cloudinary')
 
-router.post('/events', (req,res,next)=>{
-    upload.single('image')(req,res,function(err){
-        if(err instanceof multer.MulterError && err.code==='LIMIT_FILE_SIZE') return res.status(413).json({success:false,message:'Image must be 3MB or smaller'});
-        if(err) return res.status(400).json({success:false,message:err.message});
+router.post('/events', (req, res, next) => {
+    upload.single('image')(req, res, function (err) {
+        if (err instanceof multer.MulterError && err.code === 'LIMIT_FILE_SIZE') return res.status(413).json({ success: false, message: 'Image must be 3MB or smaller' });
+        if (err) return res.status(400).json({ success: false, message: err.message });
         next();
     })
 }, async (req, res) => {
@@ -53,12 +53,14 @@ router.get('/events/:id', async (req, res) => {
     }
 })
 
-router.put('/events/:id', (req,res,next)=>{
-    upload.single('image')(req,res,function(err){
-        if(err instanceof multer.MulterError && err.code==='LIMIT_FILE_SIZE') return res.status(413).json({success:false,message:'Image must be 3MB or smaller'});
-        if(err) return res.status(400).json({success:false,message:err.message});
+router.put('/events/:id', (req, res, next) => {
+    upload.single('image')(req, res, function (err) {
+        if (err instanceof multer.MulterError && err.code === 'LIMIT_FILE_SIZE') {
+            return res.status(413).json({ success: false, message: 'Image must be 3MB or smaller' });
+        }
+        if (err) return res.status(400).json({ success: false, message: err.message });
         next();
-    })
+    });
 }, async (req, res) => {
     try {
         const eventId = req.params.id;
@@ -71,10 +73,13 @@ router.put('/events/:id', (req,res,next)=>{
             });
             eventBody.event_image = result.secure_url;
         }
+
         const oldEvent = await Events.findById(eventId);
         if (!oldEvent) {
             return res.status(404).json({ success: false, message: 'Event not found' });
         }
+
+        // Update fields dynamically
         oldEvent.title = eventBody.title || oldEvent.title;
         oldEvent.description = eventBody.description || oldEvent.description;
         oldEvent.date = eventBody.date || oldEvent.date;
@@ -82,14 +87,18 @@ router.put('/events/:id', (req,res,next)=>{
         oldEvent.organizer = eventBody.organizer || oldEvent.organizer;
         oldEvent.registration_deadline = eventBody.registration_deadline || oldEvent.registration_deadline;
         oldEvent.registration_fee = eventBody.registration_fee || oldEvent.registration_fee;
+        oldEvent.category = eventBody.category || oldEvent.category;
         if (eventBody.event_image) oldEvent.event_image = eventBody.event_image;
+
+        // ✅ Add this for tags
+        if (eventBody.tags) oldEvent.tags = eventBody.tags;
 
         const updatedEvent = await oldEvent.save();
         res.status(200).json({ success: true, event: updatedEvent });
     } catch (error) {
         res.status(500).json({ success: false, message: error.message });
     }
-})
+});
 
 
 router.delete("/events/:id", async (req, res) => {

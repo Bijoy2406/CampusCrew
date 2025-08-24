@@ -1,6 +1,6 @@
 import axios from 'axios';
-
-const API_BASE_URL = 'http://localhost:8000/api';
+const backend = import.meta.env.VITE_BACKEND_LINK
+const API_BASE_URL = `${backend}/api` || 'http://localhost:8000/api';
 
 // Create axios instance with default config
 const api = axios.create({
@@ -42,10 +42,10 @@ api.interceptors.response.use(
 export const apiService = {
   // Get user profile
   getProfile: () => api.get('/profile'),
-  
+
   // Update user profile
   updateProfile: (profileData) => api.put('/profile', profileData),
-  
+
   // Upload profile photo
   uploadProfilePhoto: (userId, formData) => {
     return axios.put(`${API_BASE_URL}/upload-photo/${userId}`, formData, {
@@ -55,13 +55,13 @@ export const apiService = {
       },
     });
   },
-  
+
   // Login
   login: (credentials) => api.post('/login', credentials),
-  
+
   // Register
   register: (userData) => api.post('/signup', userData),
-  
+
   // Event APIs
   createEvent: (eventData) => {
     return axios.post(`${API_BASE_URL}/events`, eventData, {
@@ -71,10 +71,10 @@ export const apiService = {
       },
     });
   },
-  
+
   getEvents: () => api.get('/events'),
   getEvent: (eventId) => api.get(`/events/${eventId}`),
-  
+
   updateEvent: (eventId, eventData) => {
     return axios.put(`${API_BASE_URL}/events/${eventId}`, eventData, {
       headers: {
@@ -83,7 +83,7 @@ export const apiService = {
       },
     });
   },
-  
+
   deleteEvent: (eventId) => api.delete(`/events/${eventId}`),
 
   // Registration APIs
