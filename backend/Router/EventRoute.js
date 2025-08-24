@@ -7,6 +7,7 @@ const Users = require('../models/UserModel')
 const upload = require('../utils/multer')
 const multer = require('multer')
 const cloudinary = require('../utils/cloudinary')
+const { isEventExpired, cleanupExpiredEvents } = require('../utils/eventCleanup')
 
 
 // Middleware: verify JWT
@@ -66,7 +67,14 @@ router.post('/events', verifyToken, requireAdmin, (req,res,next)=>{
 
 router.get('/events', async (req, res) => {
     try {
-        const events = await Events.find();
+        // Get current time minus 1 hour to allow recently started events to still show
+        const oneHourAgo = new Date();
+        oneHourAgo.setHours(oneHourAgo.getHours() - 1);
+        
+        // Only return events that haven't been over for more than 1 hour
+        const events = await Events.find({
+            date: { $gte: oneHourAgo }
+        });
         res.status(200).json({ success: true, events });
     } catch (error) {
         res.status(500).json({ success: false, message: error.message });
@@ -80,6 +88,15 @@ router.get('/events/:id', async (req, res) => {
         if (!event) {
             return res.status(404).json({ success: false, message: 'Event not found' });
         }
+        
+        // Check if event is expired (more than 1 day old)
+        const oneDayAgo = new Date();
+        oneDayAgo.setDate(oneDayAgo.getDate() - 1);
+        
+        if (new Date(event.date) < oneDayAgo) {
+            return res.status(404).json({ success: false, message: 'Event has expired and is no longer available' });
+        }
+        
         res.status(200).json({ success: true, event });
     } catch (error) {
         res.status(500).json({ success: false, message: error.message });
@@ -145,6 +162,29 @@ router.delete("/events/:id", verifyToken, requireAdmin, async (req, res) => {
             return res.status(404).json({ success: false, message: 'Event not found' });
         }
         res.status(200).json({ success: true, message: 'Event deleted successfully' });
+    } catch (error) {
+        return res.status(500).json({ success: false, message: error.message });
+    }
+})
+
+// Manual cleanup endpoint for admins
+router.post("/cleanup-expired-events", verifyToken, requireAdmin, async (req, res) => {
+    try {
+        const result = await cleanupExpiredEvents();
+        if (result.success) {
+            res.status(200).json({
+                success: true,
+                message: 'Cleanup completed successfully',
+                deletedEventsCount: result.deletedEventsCount,
+                deletedRegistrationsCount: result.deletedRegistrationsCount
+            });
+        } else {
+            res.status(500).json({
+                success: false,
+                message: 'Cleanup failed',
+                error: result.error
+            });
+        }
     } catch (error) {
         return res.status(500).json({ success: false, message: error.message });
     }

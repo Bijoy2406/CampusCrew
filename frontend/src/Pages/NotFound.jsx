@@ -1,12 +1,21 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import Header from '../Components/Header';
 import Footer from '../Components/Footer';
+import Loader from "../Components/loader";
 import { Link, useLocation } from 'react-router-dom';
 
 function NotFound() {
   const { pathname } = useLocation();
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const timer = setTimeout(() => setLoading(false), 800);
+    return () => clearTimeout(timer);
+  }, []);
+
   return (
     <div style={{minHeight:'100vh',display:'flex',flexDirection:'column'}}>
+      {loading && <Loader color={document.documentElement.getAttribute("data-theme") === "dark" ? "#ffffff" : "#000000"} />}
       <Header />
       <main style={{flex:1,display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',padding:'2rem',textAlign:'center',gap:'1.2rem'}}>
         <h1 style={{fontSize:'4rem',margin:0}}>404</h1>
