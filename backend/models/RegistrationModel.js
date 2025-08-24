@@ -23,6 +23,9 @@ const RegistrationSchema = new Schema({
     is_registered: {
         type: Boolean,
         default: false
+    },
+    trans_id: {
+        type: String
     }
 }, {
     timestamps: true
