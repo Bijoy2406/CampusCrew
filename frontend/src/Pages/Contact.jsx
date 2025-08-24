@@ -7,6 +7,7 @@ import {
 } from "../utils/toastUtils";
 import "../CSS/contact.css";
 import Header from "../Components/Header";
+import Footer from "../Components/Footer";
 
 function Contact() {
   const [formData, setFormData] = useState({
@@ -114,16 +115,16 @@ function Contact() {
             <div className="info-item">
               <span className="info-icon">📍</span>
               <span className="info-text">
-                123 Campus Street, City, State 12345
+                141 & 142, Love Road, Tejgaon Industrial Area, Dhaka-1208
               </span>
             </div>
             <div className="info-item">
               <span className="info-icon">📞</span>
-              <span className="info-text">+1 (555) 123-4567</span>
+              <span className="info-text">01924753893</span>
             </div>
             <div className="info-item">
               <span className="info-icon">✉️</span>
-              <span className="info-text">contact@campuscrew.com</span>
+              <span className="info-text">campuscrew@gmail.com</span>
             </div>
           </div>
 
@@ -179,6 +180,7 @@ function Contact() {
           </div>
         </div>
       </div>
+      <Footer/>
     </>
   );
 }

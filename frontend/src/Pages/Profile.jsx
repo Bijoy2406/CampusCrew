@@ -6,6 +6,7 @@ import { apiService } from '../utils/apiService';
 import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import '../CSS/profile.css';
+import Footer from '../Components/Footer';
 
 const Profile = () => {
   const { isAuthenticated, logout, refreshUserData } = useAuth();
@@ -344,9 +345,12 @@ const Profile = () => {
                 </tbody>
               </table>
             </div>
+            
           )}
         </div>
+        
       )}
+      <Footer />
       <ToastContainer 
         position="top-right"
         autoClose={3000}
@@ -358,7 +362,7 @@ const Profile = () => {
         draggable
         pauseOnHover
       />
-
+      
     </div>
   );
 };
