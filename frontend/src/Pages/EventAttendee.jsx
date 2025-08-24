@@ -10,6 +10,8 @@ import { showErrorToast, showSuccessToast } from "../utils/toastUtils";
 function EventAttendee() {
   const { id } = useParams();
   const [users, setUsers] = useState([]);
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
+  const [userToBan, setUserToBan] = useState(null);
   const backend = import.meta.env.VITE_BACKEND_LINK;
   const fetchData = async () => {
     try {
@@ -28,6 +30,38 @@ function EventAttendee() {
   useEffect(() => {
     fetchData();
   }, [id]);
+
+  const handleBanClick = (user) => {
+    setUserToBan(user);
+    setShowConfirmModal(true);
+  };
+
+  const confirmBan = async () => {
+    if (!userToBan) return;
+    
+    try {
+      const { data } = await axios.put(`${backend}/api/unregister`, {
+        userId: userToBan.userId._id,
+        eventId: id,
+      });
+      if (data.success) {
+        console.log(data);
+        showSuccessToast(`${userToBan.userId.username} has been banned successfully.`);
+        fetchData();
+      }
+    } catch (error) {
+      showErrorToast("Failed to ban user.");
+    } finally {
+      setShowConfirmModal(false);
+      setUserToBan(null);
+    }
+  };
+
+  const cancelBan = () => {
+    setShowConfirmModal(false);
+    setUserToBan(null);
+  };
+
   const BanUser = async (userid) => {
     try {
       const { data } = await axios.put(`${backend}/api/unregister`, {
@@ -86,7 +120,7 @@ function EventAttendee() {
                   </p>
                   <button
                     className="attendee-button"
-                    onClick={() => BanUser(user.userId._id)}
+                    onClick={() => handleBanClick(user)}
                   >
                     Ban user
                   </button>
@@ -96,6 +130,30 @@ function EventAttendee() {
           )}
         </div>
       </div>
+      
+      {/* Confirmation Modal */}
+      {showConfirmModal && (
+        <div className="modal-overlay">
+          <div className="confirmation-modal">
+            <div className="modal-header">
+              <h3>Confirm Ban User</h3>
+            </div>
+            <div className="modal-body">
+              <p>Are you sure you want to ban <strong>{userToBan?.userId?.username}</strong> from this event?</p>
+              <p className="warning-text">This action will remove the user from the event and cannot be undone.</p>
+            </div>
+            <div className="modal-actions">
+              <button className="cancel-btn" onClick={cancelBan}>
+                Cancel
+              </button>
+              <button className="confirm-btn" onClick={confirmBan}>
+                Yes, Ban User
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+      
       <Footer />
     </div>
   );

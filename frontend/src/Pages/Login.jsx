@@ -1,4 +1,4 @@
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { FaRegCalendarAlt } from "react-icons/fa";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
@@ -36,7 +36,14 @@ function Login() {
   const [isPasswordValid, setIsPasswordValid] = useState(false); // Password validity state
   const [showPassword, setShowPassword] = useState(false);
   const navigate = useNavigate(); // Initialize useNavigate
-  const { login } = useAuth(); // Get login function from auth context
+  const { login, isAuthenticated } = useAuth(); // Get login function and auth state from auth context
+
+  // Redirect to homepage if user is already logged in
+  useEffect(() => {
+    if (isAuthenticated) {
+      navigate('/');
+    }
+  }, [isAuthenticated, navigate]);
 
   const togglePasswordVisibility = () => {
     setShowPassword(!showPassword);
@@ -83,7 +90,7 @@ function Login() {
           // Hide loader before showing toast so it's visible
           setLoading(false);
           toast.success("Login successful! Welcome back!", {
-            autoClose: 1500,
+            autoClose: 1000,
             onClose: () => navigate("/"), // Navigate after toast closes
           });
           return; // Skip finally navigation logic
