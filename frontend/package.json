@@ -19,7 +19,8 @@
     "react-paginate": "^8.3.0",
     "react-password-checklist": "^1.8.1",
     "react-router-dom": "^7.8.1",
-    "react-toastify": "^11.0.5"
+    "react-toastify": "^11.0.5",
+    "string-similarity": "^4.0.4"
   },
   "devDependencies": {
     "@eslint/js": "^9.33.0",
