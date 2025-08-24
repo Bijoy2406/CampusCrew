@@ -11,9 +11,10 @@
   justify-content: center;
   align-items: center;
   background-color: rgba(0, 0, 0, 0.4); /* Black with opacity */
+  
 }
 
-.container {
+.loader-svg {
   --uib-size: 200px;
   --uib-color: black;
   --uib-speed: 1.4s;

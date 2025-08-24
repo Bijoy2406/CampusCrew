@@ -10,12 +10,17 @@ import ManageEvent from "./Pages/ManageEvent.jsx";
 import About from "./Pages/About.jsx";
 import Contact from "./Pages/Contact.jsx";
 import { useAuth } from "./contexts/AuthContext.jsx";
+
 import EventDetails from "./Pages/EventDetails.jsx";
 import EditEvent from "./Pages/EditEvent.jsx";
 import Success from "./Pages/Success.jsx";
 import Failure from "./Pages/Failure.jsx";
+import Forbidden from './Pages/Forbidden.jsx';
+import NotFound from './Pages/NotFound.jsx';
+
+
 function App() {
-  const { isAuthenticated, loading } = useAuth();
+  const { isAuthenticated, loading, user } = useAuth();
 
   if (loading) {
     return <div>Loading...</div>; // Or a proper spinner component
@@ -45,9 +50,11 @@ function App() {
         <Route
           path="/create-event"
           element={
-            isAuthenticated ? <CreateEvent /> : <Navigate to="/login" replace />
+            isAuthenticated && user?.isAdmin ? <CreateEvent /> : isAuthenticated ? <Navigate to="/forbidden" replace /> : <Navigate to="/login" replace />
           }
         />
+  {/* Common typo / alias redirect */}
+  <Route path="/create-events" element={<Navigate to="/create-event" replace />} />
         <Route
           path="/joined-events"
           element={
@@ -57,30 +64,21 @@ function App() {
         <Route
           path="/manage-events"
           element={
-            isAuthenticated ? <ManageEvent /> : <Navigate to="/login" replace />
+            isAuthenticated ? (user?.isAdmin ? <ManageEvent /> : <Navigate to="/forbidden" replace />) : <Navigate to="/login" replace />
           }
         />
         <Route path="/about" element={<About />} />
         <Route path="/contact" element={<Contact />} />
+
         <Route path="/success" element={<Success />} />
         <Route path="/failure?" element={<Failure />} />
-        <Route
-          path="/events/:id"
-          element={
-            isAuthenticated ? (
-              <EventDetails />
-            ) : (
-              <Navigate to="/login" replace />
-            )
-          }
-        />
-        <Route
-          path="/events/:id/edit"
-          element={
-            isAuthenticated ? <EditEvent /> : <Navigate to="/login" replace />
-          }
-        />
+
+  <Route path="/events/:id" element={isAuthenticated ? <EventDetails /> : <Navigate to="/login" replace />} />
+  <Route path="/events/:id/edit" element={isAuthenticated ? (user?.isAdmin ? <EditEvent /> : <Navigate to="/forbidden" replace />) : <Navigate to="/login" replace />} />
+
         <Route path="/dashboard" element={<div>Dashboard Coming Soon</div>} />
+  <Route path="/forbidden" element={<Forbidden />} />
+  <Route path="*" element={<NotFound />} />
       </Routes>
     </>
   );

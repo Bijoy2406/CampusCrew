@@ -9,7 +9,7 @@ function Loader({ color = "black" }) {
   return (
     <div className="modal">
       <svg
-        className="container"
+        className="loader-svg"
         x="0px"
         y="0px"
         viewBox="0 0 40 40"

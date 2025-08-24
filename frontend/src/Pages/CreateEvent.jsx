@@ -1,6 +1,7 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Header from "../Components/Header";
 import Footer from "../Components/Footer";
+
 import { toast, ToastContainer } from "react-toastify";
 import {
   showSuccessToast,
@@ -11,10 +12,13 @@ import {
 import { apiService } from "../utils/apiService";
 import { useAuth } from "../contexts/AuthContext";
 import "react-toastify/dist/ReactToastify.css";
+
 import "../CSS/createEvent.css"; // Only your custom CSS
+import { useNavigate } from "react-router-dom";
 
 function CreateEvent() {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [event, setEvent] = useState({
     title: "",
     description: "",
@@ -31,6 +35,15 @@ function CreateEvent() {
   });
 
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Client side guard
+  useEffect(() => {
+    if (!user) return; // wait until user loaded
+    if (!user.isAdmin) {
+      showErrorToast('You are not authorized to access Create Event page.');
+      navigate('/forbidden', { replace: true });
+    }
+  }, [user, navigate]);
 
   const handleChange = (e) => {
     const { name, value, type, files } = e.target;
@@ -133,6 +146,7 @@ function CreateEvent() {
 
       // Create FormData for multipart/form-data
       const formData = new FormData();
+
       formData.append("title", event.title);
       formData.append("description", event.description);
       formData.append("date", event.date);
@@ -145,6 +159,7 @@ function CreateEvent() {
       formData.append("createdBy", user._id); // Add the logged-in user's ID
       formData.append("category", event.category);
       formData.append("tags", tagsArray);
+
 
       if (event.event_image) {
         formData.append("image", event.event_image);
