@@ -199,6 +199,8 @@
   text-align: center;
   border-top: 1px solid var(--border-light);
   transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
+  color: var(--text-primary);
+  background-color: var(--bg-primary);
 }
 
 .footer-links {
@@ -210,12 +212,24 @@
 
 .footer-links a {
   text-decoration: none;
-  color: var(--text-primary); /* default text color for readability */
+  color: var(--text-primary); /* default text color */
   transition: color 0.3s ease;
+  font-weight: 500;
 }
 
 .footer-links a:hover {
-  color: var(--primary-color); /* use primary theme color on hover */
+  color: #9c7bb5; /* darker lavender theme hover */
+}
+
+/* Dark mode adjustments */
+[data-theme="dark"] .home-footer {
+  border-top: 1px solid rgba(156, 123, 181, 0.4);
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+}
+
+[data-theme="dark"] .footer-links a:hover {
+  color: #9c7bb5;
 }
 
 

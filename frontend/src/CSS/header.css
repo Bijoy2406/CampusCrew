@@ -6,8 +6,13 @@ html {
 }
 
 /* Header scroll effect */
-.home-header.scrolled {
-  background: linear-gradient(135deg, rgba(102, 126, 234, 0.95) 0%, rgba(118, 75, 162, 0.95) 100%);
+.home-header {
+  background: linear-gradient(
+    135deg, 
+    #bb99d9 30%,   /* base lavender */
+    #b58bc7 50%,  /* medium lavender */
+    #bb79d7 100%  /* deeper lavender */
+  );
   backdrop-filter: blur(20px);
   box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
 }
@@ -15,10 +20,10 @@ html {
 /* Logo animation keyframes */
 @keyframes logoGlow {
   0%, 100% {
-    filter: brightness(1) drop-shadow(0 0 5px rgba(255, 255, 255, 0.3));
+    filter: brightness(1) drop-shadow(0 0 5px rgba(211, 211, 255, 0.4));
   }
   50% {
-    filter: brightness(1.2) drop-shadow(0 0 15px rgba(255, 255, 255, 0.6));
+    filter: brightness(1.2) drop-shadow(0 0 15px rgba(170, 170, 235, 0.7));
   }
 }
 
@@ -28,11 +33,11 @@ html {
 
 /* Navigation link active state */
 .nav-link.active {
-  background: linear-gradient(135deg, rgba(255, 255, 255, 0.2), rgba(255, 255, 255, 0.1));
-  border: 1px solid rgba(255, 255, 255, 0.3);
-  color: #fff;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.25), rgba(211, 211, 255, 0.2));
+  border: 1px solid rgba(190, 190, 245, 0.5);
+  color: #2c2c54;
   transform: translateY(-2px);
-  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 8px 25px rgba(170, 170, 235, 0.3);
 }
 
 /* Ripple effect for buttons - Updated for new button style */
@@ -87,14 +92,14 @@ html {
   position: absolute;
   top: 120%;
   right: 0;
-  background: var(--gradient-overlay);
+  background: linear-gradient(135deg, rgba(230, 230, 255, 0.95), rgba(200, 200, 240, 0.9));
   backdrop-filter: blur(20px);
   border-radius: 12px;
   box-shadow: 0 10px 40px var(--shadow-medium);
   min-width: 180px;
   z-index: 1000;
   overflow: hidden;
-  border: 1px solid var(--border-light);
+  border: 1px solid rgba(190, 190, 245, 0.5);
   animation: dropdownSlide 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
@@ -126,8 +131,8 @@ html {
 }
 
 .dropdown-item:hover {
-  background: var(--primary-color);
-  color: var(--text-inverse);
+  background: rgba(190, 190, 245, 0.8);
+  color: #fff;
   transform: translateX(5px);
 }
 
@@ -135,7 +140,7 @@ html {
   border-top: 1px solid var(--border-light);
 }
 
-/* Special styling for logout button - using previous animated design */
+/* Special styling for logout button */
 .dropdown-logout {
   height: 45px;
   min-width: 140px;
@@ -143,10 +148,10 @@ html {
   position: relative;
   background-color: transparent;
   cursor: pointer;
-  border: 2px solid var(--accent-color);
+  border: 2px solid #a5a5e0;
   overflow: hidden;
   border-radius: 30px;
-  color: var(--accent-color);
+  color: #5a5abf;
   transition: all 0.5s ease-in-out;
   font-weight: 800;
   letter-spacing: 2px;
@@ -172,7 +177,7 @@ html {
   left: 0;
   top: 0;
   transition: all 0.5s ease-in-out;
-  background: var(--gradient-accent);
+  background: linear-gradient(135deg, #d3d3ff, #a5a5e0);
   border-radius: 30px;
   visibility: hidden;
   height: 10px;
@@ -181,8 +186,8 @@ html {
 }
 
 .dropdown-logout:hover {
-  box-shadow: 1px 1px 60px rgba(255, 107, 107, 0.4);
-  color: var(--text-inverse);
+  box-shadow: 1px 1px 60px rgba(170, 170, 235, 0.4);
+  color: #fff;
   border: 2px solid transparent;
   transform: translateX(0) translateY(0);
   background: transparent;
@@ -233,13 +238,13 @@ html {
 
 /* Button focus enhancement */
 .nav-button:focus {
-  outline: 2px solid rgba(255, 255, 255, 0.8);
+  outline: 2px solid rgba(211, 211, 255, 0.8);
   outline-offset: 3px;
 }
 
 /* Gradient text effect for brand name */
 .brand-text {
-  background: linear-gradient(135deg, #fff, #f0f0f0);
+  background: linear-gradient(135deg, #d3d3ff, #a5a5e0);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
@@ -265,28 +270,28 @@ html {
   animation-delay: 1.5s;
 }
 
-/* Custom scrollbar for the page */
+/* Custom scrollbar with lavender */
 ::-webkit-scrollbar {
   width: 8px;
 }
 
 ::-webkit-scrollbar-track {
-  background: #f1f1f1;
+  background: #f2f2ff;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: linear-gradient(135deg, #667eea, #764ba2);
+  background: linear-gradient(135deg, #d3d3ff, #a5a5e0);
   border-radius: 10px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: linear-gradient(135deg, #764ba2, #667eea);
+  background: linear-gradient(135deg, #a5a5e0, #d3d3ff);
 }
 
 /* Focus states for accessibility */
 .nav-link:focus,
 .nav-button:focus {
-  outline: 2px solid rgba(255, 255, 255, 0.8);
+  outline: 2px solid rgba(211, 211, 255, 0.8);
   outline-offset: 2px;
 }
 
@@ -323,11 +328,45 @@ html {
 /* Dark theme support */
 @media (prefers-color-scheme: dark) {
   .home-header {
-    background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
+    background: linear-gradient(135deg, #1f1f2e 0%, #2a2a3d 100%);
   }
   
   .nav-link {
-    color: rgba(255, 255, 255, 0.95);
+    color: #d3d3ff;
+  }
+
+  .nav-link.active {
+    border: 1px solid #a5a5e0;
+    color: #fff;
+    box-shadow: 0 6px 20px rgba(211, 211, 255, 0.5);
+  }
+
+  .dropdown-menu {
+    background: linear-gradient(
+      135deg,
+      rgba(60, 60, 90, 0.95),
+      rgba(40, 40, 70, 0.95)
+    );
+    border: 1px solid #a5a5e0;
+  }
+
+  .dropdown-item {
+    color: #d3d3ff;
+  }
+
+  .dropdown-item:hover {
+    background: rgba(170, 170, 235, 0.8);
+    color: #fff;
+  }
+
+  .dropdown-logout {
+    border: 2px solid #d3d3ff;
+    color: #d3d3ff;
+  }
+
+  .dropdown-logout:hover {
+    background: linear-gradient(135deg, #a5a5e0, #d3d3ff);
+    color: #fff;
   }
 }
 
