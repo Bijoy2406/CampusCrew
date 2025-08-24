@@ -41,7 +41,7 @@ function Login() {
   // Redirect to homepage if user is already logged in
   useEffect(() => {
     if (isAuthenticated) {
-      navigate('/');
+      navigate("/");
     }
   }, [isAuthenticated, navigate]);
 
@@ -186,7 +186,7 @@ function Login() {
       }
     } catch (error) {
       console.error("Failed to fetch during signup:", error);
-      toast.error(error.response?.data?.message || "Signup request failed");
+      toast.error(error.response?.data?.errors || "Signup request failed");
     } finally {
       setLoading(false); // Hide loader
     }
