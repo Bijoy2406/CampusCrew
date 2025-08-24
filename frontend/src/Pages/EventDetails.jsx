@@ -104,10 +104,18 @@ function EventDetails() {
     setRegError("");
     try {
       if (event.registration_fee === 0) {
-        const { data } = await axios.post(`${backend}/api/register-event`, {
-          userId: user._id,
-          eventId: event._id,
-        });
+        try {
+          const { data } = await axios.post(`${backend}/api/register-event`, {
+            userId: user._id,
+            eventId: event._id,
+          });
+          if (data.success) {
+            showSuccessToast("Registration completed.");
+            setIsRegistered(true);
+          }
+        } catch (error) {
+          console.log(error.message);
+        }
       } else {
         console.log(event.registration_fee);
         console.log(typeof event.registration_fee);
@@ -240,6 +248,10 @@ function EventDetails() {
                 <div className="ed-metaBox">
                   <h4>Created</h4>
                   <p>{formatDateTime(event.createdAt)}</p>
+                </div>
+                <div className="ed-metaBox">
+                  <h4>Category</h4>
+                  <p>{event.category}</p>
                 </div>
               </section>
 

@@ -13,10 +13,13 @@ function EventsPage() {
   const [error, setError] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("");
+  const [feeFilter, setFeeFilter] = useState(""); // '', 'free', 'paid'
   const [isShrunk, setIsShrunk] = useState(false);
+  const [sortOption, setSortOption] = useState("new"); // 'new' | 'popular' | 'relevant'
+  const [sortDir, setSortDir] = useState("desc"); // 'asc' | 'desc'
 
-  // extract unique categories from events
-  const categories = [...new Set(events.map((e) => e.event_type).filter(Boolean))];
+  // extract unique categories from events (use event.category)
+  const categories = [...new Set(events.map((e) => e.category).filter(Boolean))];
 
   useEffect(() => {
     const fetchEvents = async () => {
@@ -57,19 +60,68 @@ function EventsPage() {
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
-  // Combined search and filters
+  // Combined search and filters (title, category, fee)
   useEffect(() => {
-    let filtered = events.filter((event) =>
-      event.title.toLowerCase().includes(searchQuery.toLowerCase())
+    const q = searchQuery.trim().toLowerCase();
+    let working = events.filter((event) =>
+      !q || (event.title || "").toLowerCase().includes(q)
     );
 
     if (categoryFilter) {
-      filtered = filtered.filter(
-        (event) => event.event_type && event.event_type === categoryFilter
+      working = working.filter(
+        (event) => event.category && event.category === categoryFilter
       );
     }
-    setFilteredEvents(filtered);
-  }, [searchQuery, categoryFilter, events]);
+
+    if (feeFilter) {
+      if (feeFilter === "free") {
+        working = working.filter((e) => Number(e.registration_fee) === 0);
+      } else if (feeFilter === "paid") {
+        working = working.filter((e) => Number(e.registration_fee) > 0);
+      }
+    }
+
+    // ----- Sorting logic -----
+    const sorters = {
+      new: (a, b) => {
+        // Prefer createdAt (schema has timestamps) fallback to start date
+        const da = new Date(a.createdAt || a.date || 0).getTime();
+        const db = new Date(b.createdAt || b.date || 0).getTime();
+        return da - db;
+      },
+      popular: (a, b) => {
+        // Try several possible popularity fields; fallback 0
+        const pop = (e) =>
+          e.registrations_count ??
+          e.registrationCount ??
+          e.popularity ??
+          e.participants ??
+          e.prize_money ?? // weak proxy
+          0;
+        return pop(a) - pop(b);
+      },
+      relevant: (a, b) => {
+        // Relevance: nearest upcoming date first; past events sink
+        const now = Date.now();
+        const ta = new Date(a.date || a.createdAt || 0).getTime();
+        const tb = new Date(b.date || b.createdAt || 0).getTime();
+        const aPast = ta < now;
+        const bPast = tb < now;
+        if (aPast !== bPast) return aPast ? 1 : -1; // upcoming before past
+        return ta - tb; // earlier (sooner) first
+      },
+    };
+
+    if (sorters[sortOption]) {
+      working = [...working].sort(sorters[sortOption]);
+    }
+
+    if (sortDir === "desc") {
+      working.reverse();
+    }
+
+    setFilteredEvents(working);
+  }, [searchQuery, categoryFilter, feeFilter, events, sortOption, sortDir]);
 
   if (loading) return <p className="eventsPage-loading">Loading events...</p>;
   if (error) return <p className="eventsPage-error">{error}</p>;
@@ -82,13 +134,13 @@ function EventsPage() {
 
         {/* 🔹 Search + Filters */}
         <div
-          className={`eventsPage-searchWrapper sticky-top ${
+          className={`eventsPage-searchWrapper fx-bar sticky-top ${
             isShrunk ? "eventsPage-searchWrapper--scrolled" : ""
           }`}
         >
-          <div className="eventsPage-searchRow">
+          <div className="eventsPage-searchRow fx-inner">
             {/* Search Input with Icon */}
-            <div className="eventsPage-searchBox">
+            <div className="eventsPage-searchBox fx-item">
               <span className="eventsPage-searchIcon">🔍</span>
               <input
                 id="eventSearch"
@@ -98,25 +150,71 @@ function EventsPage() {
                 onChange={(e) => setSearchQuery(e.target.value)}
                 onFocus={handleFocus}
                 onClick={handleFocus}
-                className="eventsPage-searchInput"
+                className="eventsPage-searchInput fx-input"
               />
             </div>
 
-            {/* Category Dropdown */}
-            <select
-              value={categoryFilter}
-              onChange={(e) => setCategoryFilter(e.target.value)}
-              onFocus={handleFocus}
-              onClick={handleFocus}
-              className="eventsPage-filterSelect"
-            >
-              <option value="">All Categories</option>
-              {categories.map((cat, idx) => (
-                <option key={idx} value={cat}>
-                  {cat}
-                </option>
+            {/* Category Filter */}
+            <div className="fx-selectWrap fx-item">
+              <select
+                value={categoryFilter}
+                onChange={(e) => setCategoryFilter(e.target.value)}
+                onFocus={handleFocus}
+                onClick={handleFocus}
+                className="eventsPage-filterSelect fx-select"
+                aria-label="Filter by category"
+              >
+                <option value="">All Categories</option>
+                {categories.map((cat, idx) => (
+                  <option key={idx} value={cat}>
+                    {cat}
+                  </option>
+                ))}
+              </select>
+              <span className="fx-selectBorder" aria-hidden="true" />
+            </div>
+
+            {/* Fee Toggle Pills */}
+            <div className="fx-feeToggle fx-item" role="group" aria-label="Filter by pricing">
+              {[
+                { label: 'All', val: ''},
+                { label: 'Free', val: 'free'},
+                { label: 'Paid', val: 'paid'}
+              ].map(btn => (
+                <button
+                  key={btn.val || 'all'}
+                  type="button"
+                  className="fx-pill"
+                  data-active={feeFilter === btn.val}
+                  onClick={() => { setFeeFilter(btn.val); handleFocus(); }}
+                >{btn.label}</button>
               ))}
-            </select>
+              <span className="fx-pill-indicator" style={{'--fx-index': feeFilter === 'free' ? 1 : feeFilter === 'paid' ? 2 : 0}} />
+            </div>
+
+            {/* Sorting Controls */}
+            <div className="fx-sortControls fx-item" role="group" aria-label="Sort events">
+              <select
+                className="fx-sortSelect"
+                value={sortOption}
+                onChange={(e) => { setSortOption(e.target.value); handleFocus(); }}
+                onFocus={handleFocus}
+                aria-label="Sort criteria"
+              >
+                <option value="new">New</option>
+                <option value="popular">Most Popular</option>
+                <option value="relevant">Relevant</option>
+              </select>
+              <button
+                type="button"
+                className="fx-sortDirBtn"
+                onClick={() => setSortDir(d => d === 'asc' ? 'desc' : 'asc')}
+                title={`Toggle sort direction (currently ${sortDir === 'asc' ? 'Ascending' : 'Descending'})`}
+                aria-label="Toggle sort direction"
+              >
+                {sortDir === 'asc' ? '↑' : '↓'}
+              </button>
+            </div>
           </div>
         </div>
 
@@ -186,7 +284,7 @@ function EventsPage() {
 
                   <div className="eventCard-meta">
                     <span className="eventCard-category">
-                      {(event.event_type || "EVENT").toUpperCase()}
+                      {(event.category || event.event_type || "EVENT").toUpperCase()}
                     </span>
                     <h3 className="eventCard-title" title={event.title}>
                       {event.title}
