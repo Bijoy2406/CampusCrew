@@ -15,18 +15,24 @@ import Success from "./Pages/Success.jsx";
 import Failure from "./Pages/Failure.jsx";
 import Forbidden from './Pages/Forbidden.jsx';
 import NotFound from './Pages/NotFound.jsx';
+
+import ChatBot from "./Components/ChatBot.jsx";
+
 import Dashboard from './Pages/Dashboard.jsx';
+
 
 
 function App() {
   const { isAuthenticated, loading, user } = useAuth();
 
   if (loading) {
-    return <div>Loading...</div>; // Or a proper spinner component
+    return <div>Loading...</div>;
+     // Or a proper spinner component
   }
 
   return (
     <>
+      
       <Routes>
         <Route path="/" element={<Home />} />
         <Route path="/login" element={<Login />} />
@@ -78,6 +84,7 @@ function App() {
   <Route path="/forbidden" element={<Forbidden />} />
   <Route path="*" element={<NotFound />} />
       </Routes>
+      <ChatBot />
     </>
   );
 }
