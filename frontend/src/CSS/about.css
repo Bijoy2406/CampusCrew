@@ -1,4 +1,6 @@
+.about-wrapper{
 
+}
 
 /* Generic centered layout container (added to replace missing Bootstrap container) */
 .container {
@@ -10,27 +12,36 @@
 }
 
 .about-page-container{
-  /* allow content to grow; keep min-height for hero feel */
-  min-height: 520px;
-  height: auto;
+
+  /* background-color: yellow; */
+  height: 600px;
   display: flex;
-  align-items: center;
+  /* align-items: center; */
+  justify-content: center;
+
 }
 
 .members-container{
   background-color: rgb(239, 245, 254);
-  padding: 40px 0 60px;
+
+  height: 600px;
+  display: flex;
+  justify-content: center;
+
 }
 
 .about-page{
   display: flex;
-  flex-wrap: wrap;
-  gap: 2rem;
-  align-items: center;
+
+  max-width: 1200px;
+
+  /* float: left; */
+
 }
 .member-page{
   /* background-color: rgb(212, 235, 168); */
     height: 100%;
+    max-width: 1600px;
 
 }
 .about-text{
@@ -114,9 +125,10 @@
 
 .team-container {
   display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  gap: 30px 20px;
+
+  justify-content: center; /* Centers members horizontally */
+  gap: 60px; /* Optional spacing between members */
+
 }
 .member {
   flex:1 1 260px;

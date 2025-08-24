@@ -14,8 +14,9 @@ const AboutUs = () => {
   return (
     <>
       <Header />
+
       <div className="about-page-container">
-        <div className="container about-page">
+        <div className=" about-page">
           <div className="about-text">
             <h1>About Us</h1>
             <p>
@@ -40,7 +41,7 @@ const AboutUs = () => {
         </div>
       </div>
       <div className="members-container">
-        <div className="container member-page">
+        <div className=" member-page">
           <h1 className="member-header">Meet Our Team</h1>
           <div className="team-container">
             <div className="member">
@@ -79,6 +80,7 @@ const AboutUs = () => {
           </div>
         </div>
       </div>
+
       <Footer />
     </>
   );

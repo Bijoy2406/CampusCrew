@@ -8,6 +8,7 @@ const upload = require('../utils/multer')
 const multer = require('multer')
 const cloudinary = require('../utils/cloudinary')
 
+
 // Middleware: verify JWT
 const verifyToken = (req, res, next) => {
     const token = req.headers['authorization']?.split(' ')[1];
@@ -39,6 +40,8 @@ router.post('/events', verifyToken, requireAdmin, (req,res,next)=>{
     upload.single('image')(req,res,function(err){
         if(err instanceof multer.MulterError && err.code==='LIMIT_FILE_SIZE') return res.status(413).json({success:false,message:'Image must be 3MB or smaller'});
         if(err) return res.status(400).json({success:false,message:err.message});
+
+
         next();
     })
 }, async (req, res) => {
@@ -83,13 +86,15 @@ router.get('/events/:id', async (req, res) => {
     }
 })
 
+
 // Update Event (Admin only for now) - could be extended to creator-only
 router.put('/events/:id', verifyToken, requireAdmin, (req,res,next)=>{
     upload.single('image')(req,res,function(err){
         if(err instanceof multer.MulterError && err.code==='LIMIT_FILE_SIZE') return res.status(413).json({success:false,message:'Image must be 3MB or smaller'});
         if(err) return res.status(400).json({success:false,message:err.message});
+
         next();
-    })
+    });
 }, async (req, res) => {
     try {
         const eventId = req.params.id;
@@ -101,20 +106,34 @@ router.put('/events/:id', verifyToken, requireAdmin, (req,res,next)=>{
             });
             eventBody.event_image = result.secure_url;
         }
+
         const oldEvent = await Events.findById(eventId);
         if (!oldEvent) {
             return res.status(404).json({ success: false, message: 'Event not found' });
         }
-        // Apply updates
-        const fields = ['title','description','date','location','organizer','registration_deadline','registration_fee','prize_money','event_type'];
-        fields.forEach(f => { if (eventBody[f] !== undefined) oldEvent[f] = eventBody[f]; });
+
+
+        // Update fields dynamically
+        oldEvent.title = eventBody.title || oldEvent.title;
+        oldEvent.description = eventBody.description || oldEvent.description;
+        oldEvent.date = eventBody.date || oldEvent.date;
+        oldEvent.location = eventBody.location || oldEvent.location;
+        oldEvent.organizer = eventBody.organizer || oldEvent.organizer;
+        oldEvent.registration_deadline = eventBody.registration_deadline || oldEvent.registration_deadline;
+        oldEvent.registration_fee = eventBody.registration_fee || oldEvent.registration_fee;
+        oldEvent.category = eventBody.category || oldEvent.category;
         if (eventBody.event_image) oldEvent.event_image = eventBody.event_image;
+
+        // ✅ Add this for tags
+        if (eventBody.tags) oldEvent.tags = eventBody.tags;
+
+
         const updatedEvent = await oldEvent.save();
         res.status(200).json({ success: true, event: updatedEvent });
     } catch (error) {
         res.status(500).json({ success: false, message: error.message });
     }
-})
+});
 
 
 // Delete Event (Admin only for now)
