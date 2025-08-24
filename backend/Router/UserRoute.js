@@ -116,7 +116,7 @@ router.post('/signup', async (req, res) => {
         }
 
         const hashedPassword = await bcrypt.hash(req.body.password, 10);
-        
+
         // Generate verification token
         const verificationToken = crypto.randomBytes(20).toString('hex');
 
@@ -149,7 +149,7 @@ If you did not create this account, please ignore this email.
 
 Best regards,
 CampusCrew Team`;
-        
+
         try {
             await sendEmail(user.email, subject, text);
             console.log(`Verification email sent successfully to: ${user.email}`);
@@ -166,8 +166,8 @@ CampusCrew Team`;
 
         const token = jwt.sign(data, 'secret_ecom', { expiresIn: "30m" });
 
-        res.json({ 
-            success: true, 
+        res.json({
+            success: true,
             token,
             message: "Signup successful! Please check your email for a verification link."
         });
@@ -185,25 +185,25 @@ router.get('/verify-email/:token', async (req, res) => {
     try {
         // Check if this verification ID has already been processed
         if (verificationId && successfulVerifications.has(verificationId)) {
-            return res.status(400).json({ 
-                success: false, 
-                message: "This verification link has already been used." 
+            return res.status(400).json({
+                success: false,
+                message: "This verification link has already been used."
             });
         }
 
         const user = await Users.findOne({ verificationToken: token });
-        
+
         if (!user) {
-            return res.status(400).json({ 
-                success: false, 
-                message: "Invalid or expired verification token." 
+            return res.status(400).json({
+                success: false,
+                message: "Invalid or expired verification token."
             });
         }
 
         if (user.isVerified) {
-            return res.status(400).json({ 
-                success: false, 
-                message: "Email is already verified." 
+            return res.status(400).json({
+                success: false,
+                message: "Email is already verified."
             });
         }
 
@@ -215,22 +215,22 @@ router.get('/verify-email/:token', async (req, res) => {
         // Add verification ID to successful set if provided
         if (verificationId) {
             successfulVerifications.add(verificationId);
-            
+
             // Clean up old verification IDs (optional, to prevent memory leak)
             setTimeout(() => {
                 successfulVerifications.delete(verificationId);
             }, 5 * 60 * 1000); // Remove after 5 minutes
         }
 
-        res.json({ 
-            success: true, 
-            message: "Email verified successfully! You can now log in." 
+        res.json({
+            success: true,
+            message: "Email verified successfully! You can now log in."
         });
     } catch (error) {
         console.error("Email verification error:", error);
-        res.status(500).json({ 
-            success: false, 
-            message: "Error verifying email." 
+        res.status(500).json({
+            success: false,
+            message: "Error verifying email."
         });
     }
 });
@@ -239,18 +239,18 @@ router.get('/verify-email/:token', async (req, res) => {
 router.post('/forgot-password', async (req, res) => {
     try {
         const { email } = req.body;
-        
+
         const user = await Users.findOne({ email });
         if (!user) {
-            return res.status(400).json({ 
-                success: false, 
-                message: "User with this email does not exist." 
+            return res.status(400).json({
+                success: false,
+                message: "User with this email does not exist."
             });
         }
 
         // Generate password reset token
         const resetToken = crypto.randomBytes(20).toString('hex');
-        
+
         // Set token and expiration (1 hour)
         user.resetPasswordToken = resetToken;
         user.resetPasswordExpires = new Date(Date.now() + 3600000); // 1 hour
@@ -278,21 +278,21 @@ CampusCrew Team`;
             console.log(`Password reset email sent successfully to: ${user.email}`);
         } catch (emailError) {
             console.error("Failed to send password reset email:", emailError);
-            return res.status(500).json({ 
-                success: false, 
-                message: "Error sending password reset email." 
+            return res.status(500).json({
+                success: false,
+                message: "Error sending password reset email."
             });
         }
 
-        res.json({ 
-            success: true, 
-            message: "Password reset link sent! Please check your email." 
+        res.json({
+            success: true,
+            message: "Password reset link sent! Please check your email."
         });
     } catch (error) {
         console.error("Forgot password error:", error);
-        res.status(500).json({ 
-            success: false, 
-            message: "Error processing password reset request." 
+        res.status(500).json({
+            success: false,
+            message: "Error processing password reset request."
         });
     }
 });
@@ -301,7 +301,7 @@ CampusCrew Team`;
 router.get('/verify-reset-token/:token', async (req, res) => {
     try {
         const { token } = req.params;
-        
+
         const user = await Users.findOne({
             resetPasswordToken: token,
             resetPasswordExpires: { $gt: Date.now() }
@@ -330,30 +330,30 @@ router.post('/reset-password/:token', async (req, res) => {
         });
 
         if (!user) {
-            return res.status(400).json({ 
-                success: false, 
-                message: "Password reset token is invalid or has expired." 
+            return res.status(400).json({
+                success: false,
+                message: "Password reset token is invalid or has expired."
             });
         }
 
         // Hash the new password
         const hashedPassword = await bcrypt.hash(password, 10);
-        
+
         // Update user password and clear reset token
         user.password = hashedPassword;
         user.resetPasswordToken = undefined;
         user.resetPasswordExpires = undefined;
         await user.save();
 
-        res.json({ 
-            success: true, 
-            message: "Password has been reset successfully!" 
+        res.json({
+            success: true,
+            message: "Password has been reset successfully!"
         });
     } catch (error) {
         console.error("Reset password error:", error);
-        res.status(500).json({ 
-            success: false, 
-            message: "Error resetting password." 
+        res.status(500).json({
+            success: false,
+            message: "Error resetting password."
         });
     }
 });
@@ -441,7 +441,37 @@ router.put('/upload-photo/:id', upload.single('photo'), async (req, res) => {
     }
 });
 
+router.put('/user/changepassword', async (req, res) => {
+    try {
+        const { userId, currentPassword, newPassword } = req.body;
 
+        // Validate input
+        if (!currentPassword || !newPassword) {
+            return res.status(400).json({ success: false, message: "Please provide both current and new passwords" });
+        }
+
+        const user = await Users.findById(userId);
+        if (!user) {
+            return res.status(404).json({ success: false, message: "User not found" });
+        }
+
+        // Check if current password is correct
+        const isMatch = await bcrypt.compare(currentPassword, user.password);
+        if (!isMatch) {
+            return res.status(401).json({ success: false, message: "Current password is incorrect" });
+        }
+
+        const hashedNewPassword = await bcrypt.hash(newPassword, 10);
+        user.password = hashedNewPassword;
+
+        await user.save();
+
+        res.json({ success: true, message: "Password changed successfully" });
+    } catch (error) {
+        console.error('Change password error:', error);
+        res.status(500).json({ success: false, message: "Error changing password", error });
+    }
+});
 
 module.exports = router
 

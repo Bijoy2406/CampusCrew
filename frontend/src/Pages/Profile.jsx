@@ -1,13 +1,27 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { FaUser, FaEnvelope, FaMapMarkerAlt, FaCalendarAlt, FaEdit, FaSave, FaTimes, FaCamera, FaUpload, FaLock, FaEye, FaEyeSlash } from 'react-icons/fa';
-import { useAuth } from '../contexts/AuthContext';
-import { apiService } from '../utils/apiService';
-import { toast, ToastContainer } from 'react-toastify';
-import 'react-toastify/dist/ReactToastify.css';
-import '../CSS/profile.css';
-import Footer from '../Components/Footer';
+import React, { useState, useEffect, useRef } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import {
+  FaUser,
+  FaEnvelope,
+  FaMapMarkerAlt,
+  FaCalendarAlt,
+  FaEdit,
+  FaSave,
+  FaTimes,
+  FaCamera,
+  FaUpload,
+  FaLock,
+  FaEye,
+  FaEyeSlash,
+} from "react-icons/fa";
+import { useAuth } from "../contexts/AuthContext";
+import { apiService } from "../utils/apiService";
+import { toast, ToastContainer } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
+import "../CSS/profile.css";
+import Footer from "../Components/Footer";
 import Loader from "../Components/loader";
+import axios from "axios";
 
 const Profile = () => {
   const { isAuthenticated, logout, refreshUserData } = useAuth();
@@ -16,16 +30,17 @@ const Profile = () => {
   const [loading, setLoading] = useState(true);
   const [uploadingImage, setUploadingImage] = useState(false);
   const fileInputRef = useRef(null);
+  const backend = import.meta.env.VITE_BACKEND_LINK;
   const [profileData, setProfileData] = useState({
-    _id: '',
-    username: '',
-    email: '',
-    location: '',
-    dob: '',
-    profilePic: '',
+    _id: "",
+    username: "",
+    email: "",
+    location: "",
+    dob: "",
+    profilePic: "",
     targetScore: 7.0,
     isAdmin: false,
-    createdAt: ''
+    createdAt: "",
   });
 
   const [editData, setEditData] = useState({ ...profileData });
@@ -33,31 +48,35 @@ const Profile = () => {
   const [certificates, setCertificates] = useState([]);
   const [certsOpen, setCertsOpen] = useState(false);
   const [certsLoading, setCertsLoading] = useState(false);
-  const [certsError, setCertsError] = useState('');
+  const [certsError, setCertsError] = useState("");
 
   // Password change state
   const [showPasswordModal, setShowPasswordModal] = useState(false);
   const [passwordData, setPasswordData] = useState({
-    currentPassword: '',
-    newPassword: '',
-    confirmPassword: ''
+    currentPassword: "",
+    newPassword: "",
+    confirmPassword: "",
   });
   const [passwordLoading, setPasswordLoading] = useState(false);
   const [showPasswords, setShowPasswords] = useState({
     current: false,
     new: false,
-    confirm: false
+    confirm: false,
   });
 
   const loadCertificates = async () => {
     if (!profileData._id) return;
-    setCertsLoading(true); setCertsError('');
+    setCertsLoading(true);
+    setCertsError("");
     try {
       const { data } = await apiService.getUserCertificates(profileData._id);
-      if (data.success) setCertificates(data.certificates || []); else setCertsError(data.message || 'Failed to load certificates');
+      if (data.success) setCertificates(data.certificates || []);
+      else setCertsError(data.message || "Failed to load certificates");
     } catch (e) {
-      setCertsError(e.response?.data?.message || 'Failed to load certificates');
-    } finally { setCertsLoading(false); }
+      setCertsError(e.response?.data?.message || "Failed to load certificates");
+    } finally {
+      setCertsLoading(false);
+    }
   };
 
   const toggleCertificates = () => {
@@ -69,25 +88,28 @@ const Profile = () => {
   const handleDownloadCert = async (registrationId, eventTitle) => {
     try {
       const res = await apiService.downloadCertificate(registrationId);
-      const blob = new Blob([res.data], { type: 'application/pdf' });
+      const blob = new Blob([res.data], { type: "application/pdf" });
       const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
+      const a = document.createElement("a");
       a.href = url;
-      const safeTitle = (eventTitle || 'certificate').replace(/[^a-z0-9]/gi,'_');
+      const safeTitle = (eventTitle || "certificate").replace(
+        /[^a-z0-9]/gi,
+        "_"
+      );
       a.download = `Certificate_${safeTitle}.pdf`;
       document.body.appendChild(a);
       a.click();
       a.remove();
       window.URL.revokeObjectURL(url);
     } catch (e) {
-      toast.error(e.response?.data?.message || 'Download failed');
+      toast.error(e.response?.data?.message || "Download failed");
     }
   };
 
   // Redirect to login if not authenticated
   useEffect(() => {
     if (!isAuthenticated) {
-      navigate('/login');
+      navigate("/login");
     } else {
       fetchProfile();
     }
@@ -100,21 +122,23 @@ const Profile = () => {
       if (response.data.success) {
         const userData = response.data.user;
         setProfileData({
-          _id: userData._id || '',
-          username: userData.username || '',
-          email: userData.email || '',
-          location: userData.location || '',
-          dob: userData.dob ? new Date(userData.dob).toISOString().split('T')[0] : '',
-          profilePic: userData.profilePic || '',
+          _id: userData._id || "",
+          username: userData.username || "",
+          email: userData.email || "",
+          location: userData.location || "",
+          dob: userData.dob
+            ? new Date(userData.dob).toISOString().split("T")[0]
+            : "",
+          profilePic: userData.profilePic || "",
           targetScore: userData.targetScore || 7.0,
           isAdmin: userData.isAdmin || false,
-          createdAt: userData.createdAt || ''
+          createdAt: userData.createdAt || "",
         });
       } else {
-        toast.error('Failed to load profile data');
+        toast.error("Failed to load profile data");
       }
     } catch (error) {
-      toast.error('Failed to load profile data');
+      toast.error("Failed to load profile data");
     } finally {
       setLoading(false);
     }
@@ -138,25 +162,27 @@ const Profile = () => {
         const updatedUser = response.data.user;
         setProfileData({
           _id: updatedUser._id || profileData._id,
-          username: updatedUser.username || '',
-          email: updatedUser.email || '',
-          location: updatedUser.location || '',
-          dob: updatedUser.dob ? new Date(updatedUser.dob).toISOString().split('T')[0] : '',
+          username: updatedUser.username || "",
+          email: updatedUser.email || "",
+          location: updatedUser.location || "",
+          dob: updatedUser.dob
+            ? new Date(updatedUser.dob).toISOString().split("T")[0]
+            : "",
           profilePic: updatedUser.profilePic || profileData.profilePic,
           targetScore: updatedUser.targetScore || 7.0,
           isAdmin: updatedUser.isAdmin || false,
-          createdAt: updatedUser.createdAt || ''
+          createdAt: updatedUser.createdAt || "",
         });
         setIsEditing(false);
-        toast.success('Profile updated successfully!');
+        toast.success("Profile updated successfully!");
       } else {
-        toast.error('Failed to update profile');
+        toast.error("Failed to update profile");
       }
     } catch (error) {
       if (error.response?.data?.message) {
         toast.error(error.response.data.message);
       } else {
-        toast.error('Failed to update profile');
+        toast.error("Failed to update profile");
       }
     } finally {
       setLoading(false);
@@ -166,7 +192,7 @@ const Profile = () => {
   const handleChange = (e) => {
     setEditData({
       ...editData,
-      [e.target.name]: e.target.value
+      [e.target.name]: e.target.value,
     });
   };
 
@@ -174,51 +200,56 @@ const Profile = () => {
   const handlePasswordChange = (e) => {
     setPasswordData({
       ...passwordData,
-      [e.target.name]: e.target.value
+      [e.target.name]: e.target.value,
     });
   };
 
   const togglePasswordVisibility = (field) => {
     setShowPasswords({
       ...showPasswords,
-      [field]: !showPasswords[field]
+      [field]: !showPasswords[field],
     });
   };
 
   const handlePasswordSubmit = async () => {
+    // console.log(passwordData.newPassword);
+    // console.log(passwordData.currentPassword);
+    // console.log( passwordData.newPassword)
     if (passwordData.newPassword !== passwordData.confirmPassword) {
-      toast.error('New passwords do not match');
+      toast.error("New passwords do not match");
       return;
     }
 
     if (passwordData.newPassword.length < 6) {
-      toast.error('New password must be at least 6 characters long');
+      toast.error("New password must be at least 6 characters long");
       return;
     }
 
     try {
       setPasswordLoading(true);
-      const response = await apiService.changePassword({
+      const response = await axios.put(`${backend}/api/user/changepassword`, {
+        userId: profileData._id,
         currentPassword: passwordData.currentPassword,
-        newPassword: passwordData.newPassword
+        newPassword: passwordData.newPassword,
       });
 
       if (response.data.success) {
-        toast.success('Password changed successfully!');
+        toast.success("Password changed successfully!");
         setShowPasswordModal(false);
         setPasswordData({
-          currentPassword: '',
-          newPassword: '',
-          confirmPassword: ''
+          currentPassword: "",
+          newPassword: "",
+          confirmPassword: "",
         });
       } else {
-        toast.error(response.data.message || 'Failed to change password');
+        toast.error(response.data.message || "Failed to change password");
       }
     } catch (error) {
+      console.log(error);
       if (error.response?.data?.message) {
         toast.error(error.response.data.message);
       } else {
-        toast.error('Failed to change password');
+        toast.error("Failed to change password");
       }
     } finally {
       setPasswordLoading(false);
@@ -228,14 +259,14 @@ const Profile = () => {
   const closePasswordModal = () => {
     setShowPasswordModal(false);
     setPasswordData({
-      currentPassword: '',
-      newPassword: '',
-      confirmPassword: ''
+      currentPassword: "",
+      newPassword: "",
+      confirmPassword: "",
     });
     setShowPasswords({
       current: false,
       new: false,
-      confirm: false
+      confirm: false,
     });
   };
 
@@ -250,57 +281,81 @@ const Profile = () => {
 
     const maxSize = 3 * 1024 * 1024; // 3MB
     if (file.size > maxSize) {
-      toast.error(`File size is ${(file.size / (1024 * 1024)).toFixed(2)}MB. Please select a file smaller than 3MB.`);
-      e.target.value = '';
+      toast.error(
+        `File size is ${(file.size / (1024 * 1024)).toFixed(
+          2
+        )}MB. Please select a file smaller than 3MB.`
+      );
+      e.target.value = "";
       return;
     }
 
-    const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
+    const allowedTypes = [
+      "image/jpeg",
+      "image/jpg",
+      "image/png",
+      "image/gif",
+      "image/webp",
+    ];
     if (!allowedTypes.includes(file.type)) {
-      toast.error('Please select a valid image file (JPEG, PNG, GIF, or WebP)');
-      e.target.value = '';
+      toast.error("Please select a valid image file (JPEG, PNG, GIF, or WebP)");
+      e.target.value = "";
       return;
     }
 
     try {
       setUploadingImage(true);
       const formData = new FormData();
-      formData.append('photo', file);
+      formData.append("photo", file);
 
-      const response = await apiService.uploadProfilePhoto(profileData._id, formData);
+      const response = await apiService.uploadProfilePhoto(
+        profileData._id,
+        formData
+      );
       if (response.data.success) {
         setProfileData({
           ...profileData,
-          profilePic: response.data.url
+          profilePic: response.data.url,
         });
         await refreshUserData();
-        toast.success('Profile photo updated successfully!');
+        toast.success("Profile photo updated successfully!");
       } else {
-        toast.error(response.data.message || 'Failed to upload image');
+        toast.error(response.data.message || "Failed to upload image");
       }
     } catch (error) {
       if (error.response?.data?.message) {
         toast.error(error.response.data.message);
       } else if (error.response?.status === 413) {
-        toast.error('File is too large. Please select a smaller image.');
+        toast.error("File is too large. Please select a smaller image.");
       } else {
-        toast.error('Failed to upload image. Please try again.');
+        toast.error("Failed to upload image. Please try again.");
       }
     } finally {
       setUploadingImage(false);
-      e.target.value = '';
+      e.target.value = "";
     }
   };
 
   const getInitials = (username) => {
-    if (!username) return 'U';
-    return username.split(' ').map(name => name[0]).join('').toUpperCase().slice(0, 2);
+    if (!username) return "U";
+    return username
+      .split(" ")
+      .map((name) => name[0])
+      .join("")
+      .toUpperCase()
+      .slice(0, 2);
   };
 
   if (!isAuthenticated) {
     return (
       <div className="profile-container">
-        <Loader color={document.documentElement.getAttribute("data-theme") === "dark" ? "#ffffff" : "#000000"} />
+        <Loader
+          color={
+            document.documentElement.getAttribute("data-theme") === "dark"
+              ? "#ffffff"
+              : "#000000"
+          }
+        />
       </div>
     );
   }
@@ -308,20 +363,38 @@ const Profile = () => {
   if (loading) {
     return (
       <div className="profile-container">
-        <Loader color={document.documentElement.getAttribute("data-theme") === "dark" ? "#ffffff" : "#000000"} />
+        <Loader
+          color={
+            document.documentElement.getAttribute("data-theme") === "dark"
+              ? "#ffffff"
+              : "#000000"
+          }
+        />
       </div>
     );
   }
 
   return (
     <div className="profile-container">
-      {loading && <Loader color={document.documentElement.getAttribute("data-theme") === "dark" ? "#ffffff" : "#000000"} />}
+      {loading && (
+        <Loader
+          color={
+            document.documentElement.getAttribute("data-theme") === "dark"
+              ? "#ffffff"
+              : "#000000"
+          }
+        />
+      )}
       {/* Header */}
       <header className="profile-header">
         <div className="header-content">
-          <Link to="/" className="back-link">← Back to Home</Link>
+          <Link to="/" className="back-link">
+            ← Back to Home
+          </Link>
           <h1>My Profile</h1>
-          <button onClick={logout} className="logout-btn">Logout</button>
+          <button onClick={logout} className="logout-btn">
+            Logout
+          </button>
         </div>
       </header>
 
@@ -329,12 +402,17 @@ const Profile = () => {
         {/* Left Side - Avatar & Name */}
         <div className="profile-left">
           <div className="profile-card">
-            <div className="profile-avatar" onClick={!isEditing ? handleImageClick : undefined}>
+            <div
+              className="profile-avatar"
+              onClick={!isEditing ? handleImageClick : undefined}
+            >
               {profileData.profilePic ? (
-                <img src={profileData.profilePic} alt="Profile"
+                <img
+                  src={profileData.profilePic}
+                  alt="Profile"
                   onError={(e) => {
-                    e.target.style.display = 'none';
-                    e.target.nextSibling.style.display = 'flex';
+                    e.target.style.display = "none";
+                    e.target.nextSibling.style.display = "flex";
                   }}
                 />
               ) : (
@@ -358,10 +436,12 @@ const Profile = () => {
               ref={fileInputRef}
               onChange={handleImageChange}
               accept="image/jpeg,image/jpg,image/png,image/gif,image/webp"
-              style={{ display: 'none' }}
+              style={{ display: "none" }}
             />
             <h2>{profileData.username}</h2>
-            <p className="user-role">{profileData.isAdmin ? "Admin User" : "Student"}</p>
+            <p className="user-role">
+              {profileData.isAdmin ? "Admin User" : "Student"}
+            </p>
           </div>
         </div>
 
@@ -387,7 +467,9 @@ const Profile = () => {
                     </div>
                     <div className="detail-content">
                       <div className="detail-label">Location</div>
-                      <div className="detail-value">{profileData.location || "Not provided"}</div>
+                      <div className="detail-value">
+                        {profileData.location || "Not provided"}
+                      </div>
                     </div>
                   </div>
                   <div className="detail-item">
@@ -396,7 +478,11 @@ const Profile = () => {
                     </div>
                     <div className="detail-content">
                       <div className="detail-label">Date of Birth</div>
-                      <div className="detail-value">{profileData.dob ? new Date(profileData.dob).toLocaleDateString() : "Not provided"}</div>
+                      <div className="detail-value">
+                        {profileData.dob
+                          ? new Date(profileData.dob).toLocaleDateString()
+                          : "Not provided"}
+                      </div>
                     </div>
                   </div>
                   <div className="detail-item">
@@ -405,7 +491,9 @@ const Profile = () => {
                     </div>
                     <div className="detail-content">
                       <div className="detail-label">Status</div>
-                      <div className="detail-value">{profileData.isAdmin ? "Admin" : "Student"}</div>
+                      <div className="detail-value">
+                        {profileData.isAdmin ? "Admin" : "Student"}
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -413,39 +501,88 @@ const Profile = () => {
                   <button onClick={handleEdit} className="edit-btn">
                     <FaEdit /> Edit Profile
                   </button>
-                  <button onClick={() => setShowPasswordModal(true)} className="password-btn">
+                  <button
+                    onClick={() => setShowPasswordModal(true)}
+                    className="password-btn"
+                  >
                     <FaLock /> Change Password
                   </button>
                 </div>
                 {!profileData.isAdmin && (
-                  <button onClick={toggleCertificates} className="edit-btn" style={{ marginTop:'1rem', background: certsOpen ? 'var(--accent-color)' : undefined }}>
-                    {certsOpen ? 'Hide Certificates' : 'View Certificates'}
+                  <button
+                    onClick={toggleCertificates}
+                    className="edit-btn"
+                    style={{
+                      marginTop: "1rem",
+                      background: certsOpen ? "var(--accent-color)" : undefined,
+                    }}
+                  >
+                    {certsOpen ? "Hide Certificates" : "View Certificates"}
                   </button>
                 )}
               </>
             ) : (
               <div className="edit-form">
                 <div className="upload-photo-section">
-                  <button type="button" onClick={handleImageClick} className="upload-photo-btn" disabled={uploadingImage}>
-                    <FaUpload /> {uploadingImage ? 'Uploading...' : 'Change Photo'}
+                  <button
+                    type="button"
+                    onClick={handleImageClick}
+                    className="upload-photo-btn"
+                    disabled={uploadingImage}
+                  >
+                    <FaUpload />{" "}
+                    {uploadingImage ? "Uploading..." : "Change Photo"}
                   </button>
-                  <small>Accepted formats: JPEG, PNG, GIF, WebP (Max: 3MB)</small>
+                  <small>
+                    Accepted formats: JPEG, PNG, GIF, WebP (Max: 3MB)
+                  </small>
                 </div>
                 <div className="form-group">
-                  <input type="text" name="username" value={editData.username} onChange={handleChange} className="edit-input" placeholder="Username" />
+                  <input
+                    type="text"
+                    name="username"
+                    value={editData.username}
+                    onChange={handleChange}
+                    className="edit-input"
+                    placeholder="Username"
+                  />
                 </div>
                 <div className="form-group">
-                  <input type="email" name="email" value={editData.email} onChange={handleChange} className="edit-input" placeholder="Email" />
+                  <input
+                    type="email"
+                    name="email"
+                    value={editData.email}
+                    onChange={handleChange}
+                    className="edit-input"
+                    placeholder="Email"
+                  />
                 </div>
                 <div className="form-group">
-                  <input type="text" name="location" value={editData.location} onChange={handleChange} className="edit-input" placeholder="Location" />
+                  <input
+                    type="text"
+                    name="location"
+                    value={editData.location}
+                    onChange={handleChange}
+                    className="edit-input"
+                    placeholder="Location"
+                  />
                 </div>
                 <div className="form-group">
-                  <input type="date" name="dob" value={editData.dob} onChange={handleChange} className="edit-input" />
+                  <input
+                    type="date"
+                    name="dob"
+                    value={editData.dob}
+                    onChange={handleChange}
+                    className="edit-input"
+                  />
                 </div>
                 <div className="edit-actions">
-                  <button onClick={handleSave} className="save-btn"><FaSave /> Save</button>
-                  <button onClick={handleCancel} className="cancel-btn"><FaTimes /> Cancel</button>
+                  <button onClick={handleSave} className="save-btn">
+                    <FaSave /> Save
+                  </button>
+                  <button onClick={handleCancel} className="cancel-btn">
+                    <FaTimes /> Cancel
+                  </button>
                 </div>
               </div>
             )}
@@ -453,13 +590,28 @@ const Profile = () => {
         </div>
       </div>
       {certsOpen && !profileData.isAdmin && (
-        <div className="profile-certificates" style={{ margin:'2rem auto', maxWidth:800, width:'100%', background:'var(--bg-card)', border:'1px solid var(--border-light)', borderRadius:16, padding:'1.25rem 1.5rem' }}>
-          <h2 style={{ marginTop:0 }}>Certificates</h2>
+        <div
+          className="profile-certificates"
+          style={{
+            margin: "2rem auto",
+            maxWidth: 800,
+            width: "100%",
+            background: "var(--bg-card)",
+            border: "1px solid var(--border-light)",
+            borderRadius: 16,
+            padding: "1.25rem 1.5rem",
+          }}
+        >
+          <h2 style={{ marginTop: 0 }}>Certificates</h2>
           {certsLoading && <p>Loading certificates...</p>}
-          {certsError && <p style={{ color:'var(--accent-color)' }}>{certsError}</p>}
-          {!certsLoading && !certsError && certificates.length === 0 && <p>No certificates available yet. They appear after events end.</p>}
+          {certsError && (
+            <p style={{ color: "var(--accent-color)" }}>{certsError}</p>
+          )}
+          {!certsLoading && !certsError && certificates.length === 0 && (
+            <p>No certificates available yet. They appear after events end.</p>
+          )}
           {!certsLoading && certificates.length > 0 && (
-            <div style={{ overflowX:'auto' }}>
+            <div style={{ overflowX: "auto" }}>
               <table className="certificates-table">
                 <thead>
                   <tr>
@@ -470,13 +622,20 @@ const Profile = () => {
                   </tr>
                 </thead>
                 <tbody>
-                  {certificates.map(c => (
+                  {certificates.map((c) => (
                     <tr key={c.registrationId}>
                       <td>{c.eventTitle}</td>
                       <td>{new Date(c.eventDate).toLocaleDateString()}</td>
                       <td>{new Date(c.createdAt).toLocaleDateString()}</td>
                       <td>
-                        <button className="download-btn" onClick={() => handleDownloadCert(c.registrationId, c.eventTitle)}>Download</button>
+                        <button
+                          className="download-btn"
+                          onClick={() =>
+                            handleDownloadCert(c.registrationId, c.eventTitle)
+                          }
+                        >
+                          Download
+                        </button>
                       </td>
                     </tr>
                   ))}
@@ -493,9 +652,9 @@ const Profile = () => {
           <div className="password-modal" onClick={(e) => e.stopPropagation()}>
             <h3>Change Password</h3>
             <div className="password-form">
-              <div className="form-group" style={{ position: 'relative' }}>
+              <div className="form-group" style={{ position: "relative" }}>
                 <input
-                  type={showPasswords.current ? 'text' : 'password'}
+                  type={showPasswords.current ? "text" : "password"}
                   name="currentPassword"
                   value={passwordData.currentPassword}
                   onChange={handlePasswordChange}
@@ -504,24 +663,24 @@ const Profile = () => {
                 />
                 <button
                   type="button"
-                  onClick={() => togglePasswordVisibility('current')}
+                  onClick={() => togglePasswordVisibility("current")}
                   style={{
-                    position: 'absolute',
-                    right: '12px',
-                    top: '50%',
-                    transform: 'translateY(-50%)',
-                    background: 'none',
-                    border: 'none',
-                    color: 'var(--text-muted)',
-                    cursor: 'pointer'
+                    position: "absolute",
+                    right: "12px",
+                    top: "50%",
+                    transform: "translateY(-50%)",
+                    background: "none",
+                    border: "none",
+                    color: "var(--text-muted)",
+                    cursor: "pointer",
                   }}
                 >
                   {showPasswords.current ? <FaEyeSlash /> : <FaEye />}
                 </button>
               </div>
-              <div className="form-group" style={{ position: 'relative' }}>
+              <div className="form-group" style={{ position: "relative" }}>
                 <input
-                  type={showPasswords.new ? 'text' : 'password'}
+                  type={showPasswords.new ? "text" : "password"}
                   name="newPassword"
                   value={passwordData.newPassword}
                   onChange={handlePasswordChange}
@@ -530,24 +689,24 @@ const Profile = () => {
                 />
                 <button
                   type="button"
-                  onClick={() => togglePasswordVisibility('new')}
+                  onClick={() => togglePasswordVisibility("new")}
                   style={{
-                    position: 'absolute',
-                    right: '12px',
-                    top: '50%',
-                    transform: 'translateY(-50%)',
-                    background: 'none',
-                    border: 'none',
-                    color: 'var(--text-muted)',
-                    cursor: 'pointer'
+                    position: "absolute",
+                    right: "12px",
+                    top: "50%",
+                    transform: "translateY(-50%)",
+                    background: "none",
+                    border: "none",
+                    color: "var(--text-muted)",
+                    cursor: "pointer",
                   }}
                 >
                   {showPasswords.new ? <FaEyeSlash /> : <FaEye />}
                 </button>
               </div>
-              <div className="form-group" style={{ position: 'relative' }}>
+              <div className="form-group" style={{ position: "relative" }}>
                 <input
-                  type={showPasswords.confirm ? 'text' : 'password'}
+                  type={showPasswords.confirm ? "text" : "password"}
                   name="confirmPassword"
                   value={passwordData.confirmPassword}
                   onChange={handlePasswordChange}
@@ -556,16 +715,16 @@ const Profile = () => {
                 />
                 <button
                   type="button"
-                  onClick={() => togglePasswordVisibility('confirm')}
+                  onClick={() => togglePasswordVisibility("confirm")}
                   style={{
-                    position: 'absolute',
-                    right: '12px',
-                    top: '50%',
-                    transform: 'translateY(-50%)',
-                    background: 'none',
-                    border: 'none',
-                    color: 'var(--text-muted)',
-                    cursor: 'pointer'
+                    position: "absolute",
+                    right: "12px",
+                    top: "50%",
+                    transform: "translateY(-50%)",
+                    background: "none",
+                    border: "none",
+                    color: "var(--text-muted)",
+                    cursor: "pointer",
                   }}
                 >
                   {showPasswords.confirm ? <FaEyeSlash /> : <FaEye />}
@@ -573,18 +732,26 @@ const Profile = () => {
               </div>
             </div>
             <div className="password-actions">
-              <button onClick={closePasswordModal} className="cancel-btn" disabled={passwordLoading}>
+              <button
+                onClick={closePasswordModal}
+                className="cancel-btn"
+                disabled={passwordLoading}
+              >
                 Cancel
               </button>
-              <button onClick={handlePasswordSubmit} className="save-btn" disabled={passwordLoading}>
-                {passwordLoading ? 'Changing...' : 'Change Password'}
+              <button
+                onClick={handlePasswordSubmit}
+                className="save-btn"
+                disabled={passwordLoading}
+              >
+                {passwordLoading ? "Changing..." : "Change Password"}
               </button>
             </div>
           </div>
         </div>
       )}
       <Footer />
-      <ToastContainer 
+      <ToastContainer
         position="top-right"
         autoClose={3000}
         hideProgressBar={false}
@@ -595,7 +762,6 @@ const Profile = () => {
         draggable
         pauseOnHover
       />
-      
     </div>
   );
 };
