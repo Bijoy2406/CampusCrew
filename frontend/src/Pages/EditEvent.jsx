@@ -137,7 +137,7 @@ export default function EditEvent() {
             gap: "1rem",
           }}
         >
-          <h1 className="ed-title" style={{ fontSize: "2.1rem" }}>
+          <h1 className="ed-title">
             Edit Event
           </h1>
           <Link

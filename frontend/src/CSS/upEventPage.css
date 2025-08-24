@@ -280,6 +280,61 @@
   box-shadow: 0 1px 4px var(--search-shadow);
 }
 
+/* Futuristic FX enhancements */
+.fx-bar { position:sticky; top:0; background:linear-gradient(135deg, var(--bg-primary) 0%, var(--bg-secondary) 100%); border:1px solid var(--border-light); border-radius:22px; margin-bottom:2.2rem; box-shadow:0 8px 30px -12px var(--shadow-light); overflow:hidden; }
+[data-theme="dark"] .fx-bar { background:linear-gradient(135deg, rgba(255,255,255,0.04), rgba(255,255,255,0.02)); box-shadow:0 10px 40px -14px var(--shadow-strong); }
+.fx-bar.eventsPage-searchWrapper--scrolled { border-radius:18px; box-shadow:0 6px 22px -10px var(--shadow-medium); }
+
+.fx-inner { position:relative; }
+.fx-inner::before { content:""; position:absolute; inset:0; background:radial-gradient(circle at 25% 40%, rgba(255,107,107,0.18), transparent 70%), radial-gradient(circle at 80% 70%, rgba(102,126,234,0.18), transparent 70%); opacity:.6; pointer-events:none; filter:blur(40px); }
+
+.fx-item { position:relative; }
+.fx-input, .fx-select { position:relative; z-index:1; }
+.fx-input { background:var(--bg-card); box-shadow:0 0 0 0 rgba(0,0,0,0); }
+.fx-input:focus { box-shadow:0 0 0 3px rgba(102,126,234,0.35); }
+[data-theme="dark"] .fx-input:focus { box-shadow:0 0 0 3px rgba(156,123,181,0.4); }
+
+/* Select wrapper with animated border */
+.fx-selectWrap { --fx-border: var(--primary-color); }
+.fx-selectWrap .fx-select { background:var(--bg-card); position:relative; z-index:2; }
+.fx-selectBorder { position:absolute; inset:0; border-radius:14px; background:linear-gradient(120deg, var(--gradient-primary), var(--gradient-accent)); opacity:.18; filter:blur(6px) saturate(1.2); z-index:1; transition:opacity .4s; }
+.fx-selectWrap:focus-within .fx-selectBorder, .fx-selectWrap:hover .fx-selectBorder { opacity:.45; }
+
+/* Fee toggle pills */
+.fx-feeToggle { display:flex; position:relative; gap:8px; background:var(--bg-card); padding:6px; border:1px solid var(--border-light); border-radius:16px; box-shadow:0 4px 18px -6px var(--shadow-light); }
+[data-theme="dark"] .fx-feeToggle { box-shadow:0 6px 24px -10px var(--shadow-strong); }
+.fx-pill { position:relative; z-index:2; background:transparent; border:none; color:var(--text-primary); font-size:.75rem; letter-spacing:.6px; font-weight:600; padding:8px 16px; border-radius:12px; cursor:pointer; transition:color .35s; text-transform:uppercase; }
+.fx-pill[data-active="true"] { color:var(--text-inverse); }
+.fx-pill-indicator { position:absolute; top:6px; bottom:6px; width:calc((100% - 16px - 16px)/3); /* dynamic width minus padding gaps */ background:var(--gradient-accent); border-radius:12px; z-index:1; transition:transform .55s cubic-bezier(.22,.85,.33,1); box-shadow:0 8px 20px -6px rgba(0,0,0,.4); }
+.fx-feeToggle[data-count="3"] .fx-pill-indicator { width:calc((100% - 16px - 16px)/3); }
+/* Translate based on index var */
+.fx-pill-indicator { --w:100%; transform:translateX(calc(var(--fx-index) * (100% + 8px))); }
+
+/* Sorting controls */
+.fx-sortControls { display:flex; align-items:center; gap:8px; background:var(--bg-card); padding:6px 10px; border:1px solid var(--border-light); border-radius:16px; box-shadow:0 4px 18px -6px var(--shadow-light); }
+[data-theme="dark"] .fx-sortControls { box-shadow:0 6px 24px -10px var(--shadow-strong); }
+.fx-sortSelect { background:transparent; border:none; color:var(--text-primary); font-size:.75rem; letter-spacing:.5px; font-weight:600; padding:6px 4px 6px 6px; outline:none; cursor:pointer; text-transform:uppercase; }
+.fx-sortSelect option { color:var(--text-primary); background:var(--bg-card); }
+.fx-sortDirBtn { background:var(--gradient-accent); border:none; color:var(--text-inverse); font-size:.85rem; font-weight:700; line-height:1; padding:6px 10px 7px; border-radius:10px; cursor:pointer; box-shadow:0 6px 18px -8px rgba(0,0,0,.5); transition:transform .35s; }
+.fx-sortDirBtn:hover { transform:translateY(-2px); }
+.fx-sortDirBtn:active { transform:translateY(0); }
+
+@media (max-width: 768px) {
+  .fx-sortControls { width:100%; justify-content:space-between; }
+  .fx-sortSelect { flex:1; }
+}
+
+@media (max-width: 768px) {
+  .fx-bar { border-radius:18px; }
+  .fx-bar.eventsPage-searchWrapper--scrolled { border-radius:16px; }
+  .fx-feeToggle { width:100%; justify-content:space-between; }
+  .fx-pill-indicator { width:33.33%; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fx-selectBorder, .fx-pill-indicator { transition:none !important; }
+}
+
 /* Row layout for inputs/filters */
 .eventsPage-searchRow {
   display: flex;

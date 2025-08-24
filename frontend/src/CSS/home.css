@@ -1039,3 +1039,29 @@
   box-shadow: 0 8px 28px -10px var(--shadow-strong);
   border-color: var(--border-medium);
 }
+
+/* ===== Additional Hero / Scroll Animations ===== */
+.anim-on-scroll { opacity:0; transform:translateY(40px); transition:opacity .9s cubic-bezier(.16,.68,.45,1), transform .9s cubic-bezier(.16,.68,.45,1); }
+.anim-on-scroll.in-view { opacity:1; transform:translateY(0); }
+.fade-down-delay { transform:translateY(-25px); }
+.zoom-in-delay { transform:scale(.94); }
+.zoom-in-delay.in-view { transform:scale(1); }
+.slide-up-stagger .word-anim { opacity:0; display:inline-block; transform:translateY(38px) scale(.92); animation: wordSlide .85s cubic-bezier(.34,1.56,.38,1) forwards; animation-delay: var(--w-delay,0ms); }
+@keyframes wordSlide { 0% { opacity:0; transform:translateY(38px) scale(.92);} 70% { opacity:1; transform:translateY(-6px) scale(1.02);} 100% { opacity:1; transform:translateY(0) scale(1);} }
+
+/* CTA pulse hovering */
+.pulse-hover { position:relative; }
+.pulse-hover::after { content:""; position:absolute; inset:0; border-radius:inherit; background:var(--gradient-primary); opacity:0; transform:scale(.8); transition:opacity .5s, transform .5s; filter:blur(12px); z-index:-1; }
+.pulse-hover:hover::after { opacity:.55; transform:scale(1); }
+
+/* Parallax transitions for hero content */
+.hero-3d-content { transition: transform .6s ease; will-change:transform; }
+
+/* Planet override smoothing */
+.center-core.large-planet { transition: transform .8s ease; }
+
+@media (prefers-reduced-motion: reduce){
+  .anim-on-scroll { opacity:1 !important; transform:none !important; }
+  .slide-up-stagger .word-anim { opacity:1 !important; transform:none !important; animation:none !important; }
+  .center-core.large-planet, .hero-3d-content { transition:none !important; }
+}
