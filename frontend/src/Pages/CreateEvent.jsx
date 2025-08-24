@@ -14,6 +14,7 @@ import { useAuth } from "../contexts/AuthContext";
 import "react-toastify/dist/ReactToastify.css";
 
 import "../CSS/createEvent.css"; // Only your custom CSS
+import { useNavigate } from "react-router-dom";
 
 function CreateEvent() {
   const { user } = useAuth();
