@@ -16,6 +16,9 @@ import Failure from "./Pages/Failure.jsx";
 import Forbidden from './Pages/Forbidden.jsx';
 import NotFound from './Pages/NotFound.jsx';
 import Dashboard from './Pages/Dashboard.jsx';
+import VerifyEmail from './Pages/VerifyEmail.jsx';
+import ForgotPassword from './Pages/ForgotPassword.jsx';
+import ResetPassword from './Pages/ResetPassword.jsx';
 
 
 function App() {
@@ -30,6 +33,9 @@ function App() {
       <Routes>
         <Route path="/" element={<Home />} />
         <Route path="/login" element={<Login />} />
+        <Route path="/verify-email/:token" element={<VerifyEmail />} />
+        <Route path="/forgot-password" element={<ForgotPassword />} />
+        <Route path="/reset-password/:token" element={<ResetPassword />} />
         <Route
           path="/profile"
           element={
