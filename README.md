@@ -29,7 +29,6 @@ CampusCrew is a full-stack web application that bridges the gap between event or
 - **Certificate Generation**: Automated certificate generation for completed events
 - **Profile Management**: Comprehensive user profile with customization options
 - **Recommendation System**: Intelligent event suggestions based on user preferences
-- **Chat Support**: Integrated chatbot for user assistance
 
 ### For Event Organizers
 - **Event Creation**: Comprehensive event creation with rich details
@@ -101,7 +100,6 @@ CampusCrew/
 └── frontend/
     ├── src/
     │   ├── Components/
-    │   │   ├── ChatBot.jsx       # Customer support chatbot
     │   │   ├── Footer.jsx        # Application footer
     │   │   ├── Header.jsx        # Navigation header
     │   │   ├── HeroBanner.jsx    # Landing page banner

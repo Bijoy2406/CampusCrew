@@ -20,8 +20,8 @@ import VerifyEmail from "./Pages/VerifyEmail.jsx";
 import ForgotPassword from "./Pages/ForgotPassword.jsx";
 import ResetPassword from "./Pages/ResetPassword.jsx";
 import EventAttendee from "./Pages/EventAttendee.jsx";
-import ChatBot from "./Components/ChatBot.jsx";
 import AdminSignup from "./Pages/AdminSignup.jsx";
+import ChatbotButton from "./Components/Chatbot/ChatbotButton.jsx";
 
 function App() {
   const { isAuthenticated, loading, user } = useAuth();
@@ -118,7 +118,9 @@ function App() {
         <Route path="*" element={<NotFound />} />
         <Route path="/admin/signup" element={<AdminSignup />} />
       </Routes>
-      <ChatBot />
+      
+      {/* Chatbot available on all pages */}
+      <ChatbotButton />
     </>
   );
 }

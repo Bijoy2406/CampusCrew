@@ -13,6 +13,8 @@ const UserRouter = require('./Router/UserRoute')
 const EventRouter = require('./Router/EventRoute')
 const RegistrationRouter = require('./Router/RegistrationRoute')
 const RecommendetionRouter = require('./Router/Recommendetion')
+const ChatRouter = require('./Router/ChatRoute')
+const embeddingService = require('./services/embeddingService')
 
 
 app.use(express.json())
@@ -43,10 +45,25 @@ app.get('/', (req, res) => {
 })
 
 
-app.listen(port, () => {
+app.listen(port, async () => {
     console.log(`Backend is running on port ${port}`)
     // Start the automatic event cleanup service
     startAutomaticCleanup();
+    
+    // Initialize chatbot knowledge base (optional)
+    if (process.env.ENABLE_EMBEDDINGS !== 'false') {
+        console.log('\n🤖 Initializing Chatbot Knowledge Base...');
+        try {
+            await embeddingService.loadKnowledgeBase();
+            console.log('✅ Chatbot ready!\n');
+        } catch (error) {
+            console.error('⚠️  Chatbot initialization failed:', error.message);
+            console.log('Chatbot will work with limited functionality\n');
+        }
+    } else {
+        console.log('\n⚠️  Skipping embedding initialization (ENABLE_EMBEDDINGS=false).');
+        console.log('   The chatbot will use keyword-based context only.\n');
+    }
 })
 
 
@@ -54,3 +71,4 @@ app.use('/api', UserRouter)
 app.use('/api', EventRouter)
 app.use('/api', RegistrationRouter)
 app.use('/api', RecommendetionRouter)
+app.use('/api', ChatRouter)

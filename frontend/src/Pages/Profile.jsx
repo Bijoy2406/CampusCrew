@@ -490,6 +490,7 @@ const Profile = () => {
       {/* Password Change Modal */}
       {showPasswordModal && (
         <div className="password-modal-overlay" onClick={closePasswordModal}>
+          {passwordLoading && <Loader color={document.documentElement.getAttribute("data-theme") === "dark" ? "#ffffff" : "#000000"} />}
           <div className="password-modal" onClick={(e) => e.stopPropagation()}>
             <h3>Change Password</h3>
             <div className="password-form">
@@ -501,10 +502,12 @@ const Profile = () => {
                   onChange={handlePasswordChange}
                   className="edit-input"
                   placeholder="Current Password"
+                  disabled={passwordLoading}
                 />
                 <button
                   type="button"
                   onClick={() => togglePasswordVisibility('current')}
+                  disabled={passwordLoading}
                   style={{
                     position: 'absolute',
                     right: '12px',
@@ -513,7 +516,8 @@ const Profile = () => {
                     background: 'none',
                     border: 'none',
                     color: 'var(--text-muted)',
-                    cursor: 'pointer'
+                    cursor: passwordLoading ? 'not-allowed' : 'pointer',
+                    opacity: passwordLoading ? 0.5 : 1
                   }}
                 >
                   {showPasswords.current ? <FaEyeSlash /> : <FaEye />}
@@ -527,10 +531,12 @@ const Profile = () => {
                   onChange={handlePasswordChange}
                   className="edit-input"
                   placeholder="New Password"
+                  disabled={passwordLoading}
                 />
                 <button
                   type="button"
                   onClick={() => togglePasswordVisibility('new')}
+                  disabled={passwordLoading}
                   style={{
                     position: 'absolute',
                     right: '12px',
@@ -539,7 +545,8 @@ const Profile = () => {
                     background: 'none',
                     border: 'none',
                     color: 'var(--text-muted)',
-                    cursor: 'pointer'
+                    cursor: passwordLoading ? 'not-allowed' : 'pointer',
+                    opacity: passwordLoading ? 0.5 : 1
                   }}
                 >
                   {showPasswords.new ? <FaEyeSlash /> : <FaEye />}
@@ -553,10 +560,12 @@ const Profile = () => {
                   onChange={handlePasswordChange}
                   className="edit-input"
                   placeholder="Confirm New Password"
+                  disabled={passwordLoading}
                 />
                 <button
                   type="button"
                   onClick={() => togglePasswordVisibility('confirm')}
+                  disabled={passwordLoading}
                   style={{
                     position: 'absolute',
                     right: '12px',
@@ -565,7 +574,8 @@ const Profile = () => {
                     background: 'none',
                     border: 'none',
                     color: 'var(--text-muted)',
-                    cursor: 'pointer'
+                    cursor: passwordLoading ? 'not-allowed' : 'pointer',
+                    opacity: passwordLoading ? 0.5 : 1
                   }}
                 >
                   {showPasswords.confirm ? <FaEyeSlash /> : <FaEye />}

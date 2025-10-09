@@ -39,7 +39,7 @@
   --gradient-accent: linear-gradient(135deg, #ff6b6b 0%, #ee5a24 100%);
   
   /* Website gradients - Black and White */
-  --gradient-overlay: linear-gradient(135deg, rgba(96, 75, 203, 0.7), rgba(180, 170, 233,.8));
+  --gradient-overlay: linear-gradient(135deg, rgba(255, 255, 255, 0.95), rgba(240, 240, 240, 0.9));
   --gradient-website: linear-gradient(135deg, #ffffff, #f0f0f0);
 
   /* Header Specific - Keep colorful */
@@ -129,7 +129,7 @@
   --shadow-strong: rgba(0, 0, 0, 0.6);
 
   /* Gradient Colors - Keep colorful for navbar */
-  --gradient-primary: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
+  --gradient-primary: linear-gradient(135deg,#652a0e, #352315 0% 100%);
   --gradient-secondary: linear-gradient(135deg, #5dade2 0%, #48c9b0 100%);
   --gradient-accent: linear-gradient(135deg, #ff7675 0%, #fd79a8 100%);
   
@@ -139,8 +139,8 @@
 
   /* Header Specific - Keep colorful */
   --header-bg: var(--gradient-primary);
-  --header-text: rgba(255, 255, 255, 0.9);
-  --header-border: rgba(255, 255, 255, 0.1);
+  --header-text: rgba(255, 255, 255, 0.95);
+  --header-border: rgba(255, 255, 255, 0.15);
 
   /* Success, Warning, Error Colors - Grayscale for website */
   --success-color: #ffffff;
