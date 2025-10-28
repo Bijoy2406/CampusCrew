@@ -7,7 +7,7 @@ require('dotenv').config({ path: path.join(__dirname, '.env') })
 const MongDB = require('./database')
 const { startAutomaticCleanup } = require('./utils/eventCleanup')
 const port = process.env.PORT || 8000
-const frontend_url = process.env.frontend_url
+const frontend_url = process.env.frontend_url || process.env.FRONTEND_URL
 
 
 const UserRouter = require('./Router/UserRoute')
@@ -23,30 +23,45 @@ const { autoUpdateVectorDB } = require('./utils/autoUpdateVectorDB')
 
 app.use(express.json())
 MongDB();
+
+// Always allow these origins for CORS
 const allowedOrigins = [
-    frontend_url,
     'https://campuscrew.vercel.app',
+    'https://campus-crew.vercel.app',
     'https://talk-threads-seven.vercel.app',
     'http://localhost:5173',
-    'http://localhost:3000'
+    'http://localhost:3000',
+    'http://localhost:8000'
 ];
 
+// Add frontend_url if it exists
+if (frontend_url) {
+    allowedOrigins.push(frontend_url);
+}
 
+console.log('🌐 CORS Allowed Origins:', allowedOrigins);
+
+// Configure CORS with more permissive settings for Vercel
 app.use(cors({
     origin: function (origin, callback) {
-        // Allow requests with no origin (like mobile apps or curl requests)
-        if (!origin) return callback(null, true);
+        // Allow requests with no origin (like mobile apps, Postman, curl)
+        if (!origin) {
+            console.log('✅ No origin - allowing request');
+            return callback(null, true);
+        }
         
         if (allowedOrigins.includes(origin)) {
+            console.log('✅ Origin allowed:', origin);
             callback(null, true);
         } else {
-            console.log('Blocked by CORS:', origin);
+            console.log('❌ Blocked by CORS:', origin);
+            console.log('   Allowed origins:', allowedOrigins);
             callback(new Error('Not allowed by CORS'));
         }
     },
     credentials: true,
     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
-    allowedHeaders: ['Content-Type', 'Authorization', 'refreshtoken'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'refreshtoken', 'X-Requested-With'],
     exposedHeaders: ['refreshtoken'],
     preflightContinue: false,
     optionsSuccessStatus: 204
@@ -57,6 +72,20 @@ app.use(cookieParser())
 app.get('/', (req, res) => {
     res.status(200).send(`Backend is running in port ${port}`)
 })
+
+// CORS Test endpoint
+app.get('/api/health', (req, res) => {
+    res.status(200).json({ 
+        status: 'ok', 
+        message: 'CORS is working!',
+        timestamp: new Date().toISOString(),
+        allowedOrigins: allowedOrigins 
+    })
+})
+
+// OPTIONS handler for all API routes
+app.options('*', cors())
+
 
 
 app.listen(port, async () => {
