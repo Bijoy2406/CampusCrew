@@ -12,6 +12,7 @@
 .eventsPage-container { --overlay-gradient: linear-gradient(to top, rgba(0,0,0,0.82) 0%, rgba(0,0,0,0.55) 38%, rgba(0,0,0,0.15) 72%, rgba(0,0,0,0) 100%); background:linear-gradient(115deg, var(--events-page-gradient-start), var(--events-page-gradient-end)); min-height:100vh; font-family:"Inter", system-ui, sans-serif; color:var(--text-primary); }
 
 .eventsPage-main {
+  flex: 1;
   max-width: 1320px;
   margin: 0 auto;
   padding: 3.5rem 2rem 4.5rem;

@@ -46,6 +46,9 @@ export const apiService = {
   // Update user profile
   updateProfile: (profileData) => api.put('/profile', profileData),
 
+  // Change password
+  changePassword: (passwordData) => api.put('/change-password', passwordData),
+
   // Upload profile photo
   uploadProfilePhoto: (userId, formData) => {
     return axios.put(`${API_BASE_URL}/upload-photo/${userId}`, formData, {

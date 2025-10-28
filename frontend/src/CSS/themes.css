@@ -129,7 +129,7 @@
   --shadow-strong: rgba(0, 0, 0, 0.6);
 
   /* Gradient Colors - Keep colorful for navbar */
-  --gradient-primary: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
+  --gradient-primary: linear-gradient(135deg,#652a0e, #352315 0% 100%);
   --gradient-secondary: linear-gradient(135deg, #5dade2 0%, #48c9b0 100%);
   --gradient-accent: linear-gradient(135deg, #ff7675 0%, #fd79a8 100%);
   
@@ -139,8 +139,8 @@
 
   /* Header Specific - Keep colorful */
   --header-bg: var(--gradient-primary);
-  --header-text: rgba(255, 255, 255, 0.9);
-  --header-border: rgba(255, 255, 255, 0.1);
+  --header-text: rgba(255, 255, 255, 0.95);
+  --header-border: rgba(255, 255, 255, 0.15);
 
   /* Success, Warning, Error Colors - Grayscale for website */
   --success-color: #ffffff;
@@ -248,42 +248,7 @@
   border-color: var(--primary-color);
   box-shadow: 0 0 0 3px rgba(var(--primary-color), 0.1);
 }
-.home-footer {
-  padding: 20px;
-  text-align: center;
-  border-top: 1px solid var(--border-light);
-  transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
-  color: var(--text-primary);
-  background-color: var(--bg-primary);
-}
 
-.footer-links {
-  margin-top: 10px;
-  display: flex;
-  justify-content: center;
-  gap: 15px;
-}
-
-.footer-links a {
-  text-decoration: none;
-  /* links always contrast with footer background */
-  color: var(--footer-link-color);
-  transition: color 0.3s ease;
-  font-weight: 500;
-}
-
-.footer-links a:hover {
-  color: var(--footer-link-hover); /* accent color on hover */
-}
-
-/* Dark mode adjustments */
-[data-theme="dark"] .home-footer {
-  border-top: 1px solid rgba(156, 123, 181, 0.4);
-  background-color: var(--bg-primary);
-  color: var(--text-primary);
-}
-
-/* Dark mode hover is handled by --footer-link-hover */
 
 
 /* Button themes */
@@ -344,10 +309,7 @@
     --border-medium: #000000;
     --border-strong: #000000;
 
-    --bg-primary: #ffffff;    
-    --text-primary: #000000;    
-    --footer-link-color: #aa9c9c;
-    --footer-link-hover: #cdadad;
+  
   }
   
   [data-theme="dark"] {
@@ -355,10 +317,6 @@
     --border-medium: #ffffff;
     --border-strong: #ffffff;
 
-    --bg-primary: #000000;      
-    --text-primary: #ffffff;   
-    --footer-link-color: #ffffff;
-    --footer-link-hover: #ffffff;
   }
 }
 

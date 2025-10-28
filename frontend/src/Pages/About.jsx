@@ -1,8 +1,9 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import "../CSS/about.css";
 import Header from "../Components/Header";
 import aboutUs from "../assets/img/aboutUs.jpg";
 import Footer from "../Components/Footer";
+import Loader from "../Components/loader";
 
 import sunny from "../assets/img/Sunny.jpg";
 import bijoy from "../assets/img/Bijoy.jpg";
@@ -11,8 +12,16 @@ import { useNavigate } from "react-router-dom";
 
 const AboutUs = () => {
   const navigate = useNavigate();
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const timer = setTimeout(() => setLoading(false), 800);
+    return () => clearTimeout(timer);
+  }, []);
+
   return (
     <>
+      {loading && <Loader color={document.documentElement.getAttribute("data-theme") === "dark" ? "#ffffff" : "#000000"} />}
       <Header />
 
       <div className="about-page-container">

@@ -3,9 +3,10 @@ import { useParams, useNavigate, Link } from "react-router-dom";
 import Header from "../Components/Header";
 import Footer from "../Components/Footer";
 import { apiService } from "../utils/apiService";
+import { clearEventCaches } from "../utils/cacheUtils";
 import { useAuth } from "../contexts/AuthContext";
 import { showSuccessToast, showErrorToast } from "../utils/toastUtils";
-import Loader from "../Components/loader_login";
+import Loader from "../Components/loader";
 import "../CSS/eventDetails.css";
 
 export default function EditEvent() {
@@ -109,6 +110,10 @@ export default function EditEvent() {
       const { data } = await apiService.updateEvent(id, fd);
       if (data.success) {
         showSuccessToast("Event updated");
+        
+        // Clear events cache to ensure updated event shows up correctly
+        clearEventCaches();
+        
         navigate(`/events/${id}`);
       } else {
         const msg = data.message || "Update failed";

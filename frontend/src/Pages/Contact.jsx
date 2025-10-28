@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   showSuccessToast,
   showErrorToast,
@@ -8,6 +8,7 @@ import {
 import "../CSS/contact.css";
 import Header from "../Components/Header";
 import Footer from "../Components/Footer";
+import Loader from "../Components/loader";
 
 function Contact() {
   const [formData, setFormData] = useState({
@@ -16,6 +17,12 @@ function Contact() {
     message: "",
   });
   const [isLoading, setIsLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const timer = setTimeout(() => setLoading(false), 800);
+    return () => clearTimeout(timer);
+  }, []);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -97,6 +104,7 @@ function Contact() {
   };
   return (
     <>
+      {loading && <Loader color={document.documentElement.getAttribute("data-theme") === "dark" ? "#ffffff" : "#000000"} />}
       <Header />
       <div
         style={{ maxHeight: "calc(100vh - 350px)" }}

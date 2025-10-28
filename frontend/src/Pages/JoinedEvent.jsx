@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import axios from "axios";
 import Header from "../Components/Header";
 import Footer from "../Components/Footer";
+import Loader from "../Components/loader";
 import "../CSS/joinedEvents.css";
 import { useAuth } from "../contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
@@ -90,6 +91,7 @@ function JoinedEvent() {
 
   return (
     <div className="je-page">
+      {loading && <Loader color={document.documentElement.getAttribute("data-theme") === "dark" ? "#ffffff" : "#000000"} />}
       <Header />
       <main className="je-main">
         <h1 className="sr-only">My Joined Events</h1>
