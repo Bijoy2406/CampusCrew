@@ -25,21 +25,31 @@ app.use(express.json())
 MongDB();
 const allowedOrigins = [
     frontend_url,
-    'https://talk-threads-seven.vercel.app'
+    'https://campuscrew.vercel.app',
+    'https://talk-threads-seven.vercel.app',
+    'http://localhost:5173',
+    'http://localhost:3000'
 ];
 
 
 app.use(cors({
     origin: function (origin, callback) {
-        if (allowedOrigins.includes(origin) || !origin) {
+        // Allow requests with no origin (like mobile apps or curl requests)
+        if (!origin) return callback(null, true);
+        
+        if (allowedOrigins.includes(origin)) {
             callback(null, true);
         } else {
+            console.log('Blocked by CORS:', origin);
             callback(new Error('Not allowed by CORS'));
         }
     },
     credentials: true,
-    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
     allowedHeaders: ['Content-Type', 'Authorization', 'refreshtoken'],
+    exposedHeaders: ['refreshtoken'],
+    preflightContinue: false,
+    optionsSuccessStatus: 204
 }))
 app.use(cookieParser())
 

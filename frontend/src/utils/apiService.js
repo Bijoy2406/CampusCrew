@@ -1,6 +1,8 @@
 import axios from 'axios';
-const backend = import.meta.env.VITE_BACKEND_LINK
-const API_BASE_URL = `${backend}/api` || 'http://localhost:8000/api';
+const backend = import.meta.env.VITE_BACKEND_LINK || 'http://localhost:8000';
+// Remove trailing slash to prevent double slashes
+const cleanBackend = backend.endsWith('/') ? backend.slice(0, -1) : backend;
+const API_BASE_URL = `${cleanBackend}/api`;
 
 // Create axios instance with default config
 const api = axios.create({
