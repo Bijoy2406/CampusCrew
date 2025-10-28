@@ -161,21 +161,54 @@ async function getUpcomingEvents(limit = 5) {
 }
 
 /**
- * Search events by keyword
+ * Search events by keyword with improved matching
  */
 async function searchEvents(keyword) {
   try {
+    // Clean up the keyword - remove common words like "event", "show", etc. for better matching
+    let cleanKeyword = keyword;
+    
+    // Remove common words that don't help in matching
+    const commonWords = ['event', 'events', 'show', 'program', 'activity', 'competition'];
+    const keywordWords = keyword.toLowerCase().split(/\s+/);
+    const meaningfulWords = keywordWords.filter(word => 
+      !commonWords.includes(word) && word.length > 2
+    );
+    
+    // If we have meaningful words, use them for search
+    if (meaningfulWords.length > 0) {
+      cleanKeyword = meaningfulWords.join(' ');
+    }
+    
+    // Create multiple search patterns for better matching
+    const searchPatterns = [
+      // Exact phrase match
+      { title: new RegExp(keyword, 'i') },
+      { description: new RegExp(keyword, 'i') },
+      
+      // Clean keyword match
+      { title: new RegExp(cleanKeyword, 'i') },
+      { description: new RegExp(cleanKeyword, 'i') },
+      
+      // Individual word matches (if multiple meaningful words)
+      ...meaningfulWords.map(word => ({ title: new RegExp(word, 'i') })),
+      
+      // Category match
+      { category: new RegExp(keyword, 'i') }
+    ];
+    
     const events = await EventModel.find({
-      $or: [
-        { title: new RegExp(keyword, 'i') },
-        { description: new RegExp(keyword, 'i') },
-        { category: new RegExp(keyword, 'i') }
-      ]
+      $or: searchPatterns
     })
       .limit(10)
       .select('title date category location registration_fee prize_money');
     
-    return events.map(event => ({
+    // Remove duplicates (in case multiple patterns matched the same event)
+    const uniqueEvents = events.filter((event, index, self) => 
+      index === self.findIndex(e => e._id.toString() === event._id.toString())
+    );
+    
+    return uniqueEvents.map(event => ({
       id: event._id,
       title: event.title,
       date: event.date,
@@ -340,25 +373,52 @@ function requiresDatabaseQuery(query) {
 }
 
 /**
- * Extract event name from query
+ * Extract event name from query with improved patterns
  */
 function extractEventName(query) {
   // Common patterns for event names in queries
   const patterns = [
+    // Direct event references
     /(?:event\s+(?:called|named)?["']?([^"'?.!]+)["']?)/i,
     /(?:["']([^"']+)["']\s+event)/i,
     /(?:about|for)\s+["']?([^"'?.!]+)["']?\s+event/i,
+    
+    // Participant queries
     /(?:participants?\s+(?:in|for|of)\s+["']?([^"'?.!]+)["']?)/i,
-    // Fee/price/prize oriented queries like: "fee for X", "prize money for X", "how much is the ticket for X"
+    
+    // Fee/price/prize oriented queries - these are the most common
     /(?:what(?:'s| is)?\s*(?:the\s*)?(?:fee|price|cost|entry\s*fee|ticket|prize(?:\s*money)?))\s*(?:for|of|in)\s+["']?([^"'?.!]+)["']?/i,
     /(?:(?:fee|price|cost|entry\s*fee|ticket|prize(?:\s*money)?)\s*(?:for|of|in)\s+["']?([^"'?.!]+)["']?)/i,
-    /(?:how\s+much[^?\n]*?(?:fee|price|ticket)[^?\n]*?(?:for|of|in)\s+["']?([^"'?.!]+)["']?)/i
+    /(?:how\s+much[^?\n]*?(?:fee|price|ticket)[^?\n]*?(?:for|of|in)\s+["']?([^"'?.!]+)["']?)/i,
+    
+    // NEW: More flexible patterns for common queries
+    // "fashion show fee" -> "fashion show"
+    /^([a-zA-Z\s]+?)\s+(?:fee|price|cost|registration\s*fee|entry\s*fee|ticket)$/i,
+    // "fashion show prize money" -> "fashion show"  
+    /^([a-zA-Z\s]+?)\s+(?:prize(?:\s*money)?|reward|winnings)$/i,
+    // "glamour night registration fee" -> "glamour night"
+    /^([a-zA-Z\s]+?)\s+registration\s+fee$/i,
+    // "when is the fashion show" -> "fashion show"
+    /(?:when\s+is\s+(?:the\s+)?([a-zA-Z\s]+?)(?:\s*\?|$))/i,
+    // "fashion show details" -> "fashion show"
+    /^([a-zA-Z\s]+?)\s+(?:details?|info|information)$/i,
+    // "[event name]: [subtitle] details" -> "[event name]: [subtitle]"
+    /^([a-zA-Z\s:]+?)\s+(?:details?|info|information)$/i
   ];
   
   for (const pattern of patterns) {
     const match = query.match(pattern);
     if (match && match[1]) {
-      return match[1].trim();
+      let eventName = match[1].trim();
+      
+      // Clean up common artifacts
+      eventName = eventName.replace(/^(the|a|an)\s+/i, ''); // Remove articles
+      eventName = eventName.replace(/\s+(is|are)$/i, ''); // Remove trailing "is/are"
+      
+      // Only return if we have a meaningful name (more than just one word)
+      if (eventName.length > 2) {
+        return eventName;
+      }
     }
   }
   

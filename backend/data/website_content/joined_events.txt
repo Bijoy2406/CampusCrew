@@ -32,10 +32,9 @@ Events you're registered for that haven't happened yet:
 Events you've already attended:
 - Event name and date
 - Attendance status (Attended/Not Attended)
-- Certificate availability
-- Download certificate button
 - Event rating option
 - View event memories (photos)
+- **Note**: To download certificates, go to Profile > View Certificates
 
 **Pending Registrations:**
 Events where payment or confirmation is pending:
@@ -93,11 +92,11 @@ Quick Actions:
 - 🗑️ Cancel Registration (if deadline allows)
 
 **For Past Events:**
-- 📜 Download Certificate
 - ⭐ Rate Event
 - 📸 View Event Photos
 - 💬 Write Review
 - 🔄 Register for Similar Events
+- 📜 Download Certificate (Go to Profile > View Certificates)
 
 Filter and Sort Options:
 
@@ -124,12 +123,27 @@ Search Events:
 
 Download Certificates:
 
-After attending an event:
-1. Event appears in "Past Events"
-2. Certificate becomes available (usually within 24 hours)
-3. Click "Download Certificate" button
-4. Certificate downloads as PDF
-5. Print or share as needed
+**IMPORTANT**: Certificates are downloaded from your Profile section, NOT from My Events page.
+
+**How to Download Certificates:**
+1. Click on your Profile Icon (top right corner)
+2. Click "View Certificates" button
+3. See all your earned certificates
+4. Click "Download" next to the certificate you want
+5. Certificate downloads as PDF
+
+**Certificate Location:**
+- Certificates are in: Profile > View Certificates
+- NOT available on the My Events page
+- All certificates in one central location
+
+**Requirements for Certificates:**
+- Must have attended the event (marked by organizer)
+- Attendance status must be "Attended"
+- Payment completed (for paid events)
+- Usually available within 24-48 hours after event
+
+For detailed certificate information, visit your Profile page.
 
 Certificate Includes:
 - Your name

@@ -24,11 +24,34 @@ Q: Do I need to pay for events?
 A: Some events are free, while others may require payment. The event details page will show if payment is required.
 
 CERTIFICATES:
-Q: How do I get my event certificate?
-A: After attending an event, the certificate will be available in your "My Events" page. Click "Download Certificate" to get it.
+Q: How do I download my event certificate?
+A: Certificates are downloaded from your Profile section:
+   1. Click on your Profile Icon (top right corner)
+   2. Click "View Certificates" button
+   3. You'll see all your earned certificates
+   4. Click "Download" next to the certificate you want
+   5. Certificate saves as PDF to your device
+
+Q: Where can I find my certificates?
+A: Go to your Profile page (click Profile Icon) and click "View Certificates" button. All your certificates are there.
 
 Q: What if I don't see my certificate?
-A: Certificates are issued after the event organizer marks your attendance. Contact the organizer if you attended but don't see your certificate.
+A: Certificates are issued ONLY if:
+   - You attended the event (organizer marked attendance)
+   - Your attendance status is "Attended"
+   - Payment is completed (for paid events)
+   - Usually available 24-48 hours after event
+   Contact the event organizer if you attended but attendance wasn't marked.
+
+Q: Why is my certificate not available yet?
+A: Check these requirements:
+   - Attendance must be marked by organizer as "Attended"
+   - Wait 24-48 hours after event completion
+   - Complete payment if it was a paid event
+   - If still unavailable, contact organizer or support@campuscrew.com
+
+Q: Can I download certificates from My Events page?
+A: No, certificates are only available in Profile > View Certificates. They are NOT on the My Events page.
 
 EVENT CREATION:
 Q: Who can create events?

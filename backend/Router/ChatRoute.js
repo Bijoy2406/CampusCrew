@@ -1,30 +1,53 @@
 /**
- * Chat Route
- * Handles chatbot API endpoints with advanced features:
- * - Website crawling and indexing
- * - ChromaDB for better knowledge retrieval
- * - MongoDB integration for live event data
+ * Chat Route - Simplified Architecture
+ * Handles chatbot API endpoints with:
+ * - AI Intent Classification (intelligent query routing)
+ * - Qdrant Vector Database (semantic search for general questions)
+ * - MongoDB integration (live event data)
+ * - Simple keyword fallback (reliability)
  */
 
 const express = require('express');
 const router = express.Router();
-const { GoogleGenerativeAI } = require('@google/generative-ai');
-const embeddingService = require('../services/embeddingService');
-const chromaManager = require('../utils/chromaEmbeddings');
+const axios = require('axios');
+const MonitoredVectorService = require('../utils/monitoredVectorService'); // Qdrant vector search
 const dbTools = require('../utils/dbTools');
-const WebsiteCrawler = require('../utils/crawler');
-const firecrawlService = require('../utils/firecrawlService');
+const intentClassifier = require('../utils/intentClassifier'); // AI Intent Classification
+const eventQueryHandler = require('../utils/eventQueryHandler'); // Event Query Processing
+const conversationMemory = require('../utils/conversationMemory'); // Conversation Memory
 const path = require('path');
 const fs = require('fs').promises;
 
-// Initialize Gemini client
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-const CHAT_MODEL = process.env.GEMINI_MODEL || 'gemini-2.5-flash';
-const FALLBACK_CHAT_MODEL = process.env.GEMINI_FALLBACK_MODEL || 'gemini-2.5-pro';
-const API_VERSION = process.env.GEMINI_API_VERSION || 'v1';
-const MAX_OUTPUT_TOKENS = Number(process.env.GEMINI_MAX_OUTPUT_TOKENS);
+// Initialize Qdrant vector service
+const qdrantService = new MonitoredVectorService({
+  collectionName: process.env.QDRANT_COLLECTION || 'campuscrew_docs'
+});
+
+// ChatAnywhere GPT API configuration (OpenAI-compatible)
+const CHATANYWHERE_API_KEY = process.env.CHATANYWHERE_API_KEY;
+const CHATANYWHERE_MODEL = process.env.CHATANYWHERE_MODEL || 'gpt-5-mini';
+const CHATANYWHERE_MAX_TOKENS = Number(process.env.CHATANYWHERE_MAX_OUTPUT_TOKENS) || 2048;
+const CHATANYWHERE_BASE_URL = process.env.CHATANYWHERE_BASE_URL || 'https://api.chatanywhere.tech/v1';
+const CHATANYWHERE_API_URL = `${CHATANYWHERE_BASE_URL}/chat/completions`;
 const FRONTEND_BASE_URL = (process.env.frontend_url || process.env.FRONTEND_URL || 'http://localhost:3000').replace(/\/$/, '');
-const HAS_MAX_TOKENS = Number.isFinite(MAX_OUTPUT_TOKENS) && MAX_OUTPUT_TOKENS > 0;
+
+function unique(arr) { return Array.from(new Set(arr.filter(Boolean))); }
+
+// Detect if the user is asking for a specific attribute (concise answer mode)
+function detectAttributeQuery(text) {
+  const t = (text || '').toLowerCase();
+  const checks = [
+    { key: 'fee', re: /(registration\s*)?(fee|cost|price|entry(?:\s*fee)?|ticket(?:\s*price)?)/i },
+    { key: 'prize', re: /(prize(?:\s*money)?|reward|winnings|price\s*money)/i },
+    { key: 'deadline', re: /(registration\s*)?(last\s*date|final\s*date|deadline|close\s*date|end\s*date)/i },
+  ];
+  for (const c of checks) {
+    if (c.re.test(t)) return c.key;
+  }
+  return null;
+}
+
+// Using ChatAnywhere GPT API for LLM responses (OpenAI-compatible)
 
 /**
  * Simple context retrieval without embeddings
@@ -39,6 +62,20 @@ async function getSimpleContext(query) {
     const queryLower = query.toLowerCase();
     const cleanedQuery = queryLower.replace(/[^a-z0-9\s]/g, ' ');
     let keywords = cleanedQuery.split(/\s+/).filter(w => w.length > 2);
+
+    // Special handling for contact-related queries
+    const isContactQuery = /\b(contact|address|phone|email|location|reach|call)\b/i.test(queryLower);
+    if (isContactQuery) {
+      console.log('🎯 Detected contact query - prioritizing contact.txt');
+      try {
+        const contactPath = path.join(dataDir, 'contact.txt');
+        const contactContent = await fs.readFile(contactPath, 'utf-8');
+        // Return contact.txt as highest priority
+        return contactContent;
+      } catch (err) {
+        console.log('⚠️  contact.txt not found, continuing with keyword search');
+      }
+    }
 
     if (keywords.length === 0 && queryLower.includes('campuscrew')) {
       keywords = ['campuscrew'];
@@ -55,6 +92,11 @@ async function getSimpleContext(query) {
       for (const keyword of keywords) {
         const matches = (contentLower.match(new RegExp(keyword, 'g')) || []).length;
         score += matches;
+      }
+      
+      // Boost score if it's contact.txt and query contains contact keywords
+      if (file === 'contact.txt' && isContactQuery) {
+        score += 1000; // High boost
       }
       
       if (score > 0) {
@@ -86,6 +128,26 @@ async function getSimpleContext(query) {
   }
 }
 
+// Simple in-memory per-IP rate limiter to reduce upstream 429s
+const RATE_WINDOW_MS = 60 * 1000; // 1 minute
+const RATE_LIMIT = Number(process.env.CHAT_RATE_LIMIT_PER_MIN || 10);
+const rateMap = new Map(); // ip -> { count, resetAt }
+
+function isAllowed(ip) {
+  const now = Date.now();
+  const rec = rateMap.get(ip) || { count: 0, resetAt: now + RATE_WINDOW_MS };
+  if (now > rec.resetAt) {
+    rec.count = 0;
+    rec.resetAt = now + RATE_WINDOW_MS;
+  }
+  if (rec.count >= RATE_LIMIT) {
+    return false;
+  }
+  rec.count += 1;
+  rateMap.set(ip, rec);
+  return true;
+}
+
 /**
  * POST /chat
  * Process user message and return bot response
@@ -93,7 +155,15 @@ async function getSimpleContext(query) {
  */
 router.post('/chat', async (req, res) => {
   try {
-    const { message, conversationHistory = [] } = req.body;
+    // Basic rate limiting per IP to avoid upstream quota spikes
+    const ip = req.headers['x-forwarded-for']?.split(',')[0]?.trim() || req.ip || 'unknown';
+    if (!isAllowed(ip)) {
+      return res.status(429).json({
+        success: false,
+        error: 'Too many requests. Please slow down and try again in a minute.'
+      });
+    }
+    const { message, conversationHistory = [], userId } = req.body;
 
     // Validate input
     if (!message || typeof message !== 'string') {
@@ -103,375 +173,181 @@ router.post('/chat', async (req, res) => {
       });
     }
 
-    // Validate Gemini API key
-    if (!process.env.GEMINI_API_KEY) {
+    // Generate user ID if not provided (for anonymous users)
+    const effectiveUserId = userId || ip; // Use IP as fallback for user identification
+
+    // Add user message to conversation memory
+    conversationMemory.addMessage(effectiveUserId, 'user', message, {
+      ip,
+      timestamp: Date.now(),
+      userAgent: req.headers['user-agent']
+    });
+
+    // Get conversation context for enhanced responses
+    const memoryContext = conversationMemory.getConversationContext(effectiveUserId);
+    const conversationSummary = conversationMemory.getConversationSummary(effectiveUserId);
+
+    console.log(`💭 User ${effectiveUserId}: "${message}" | 🤖 Model: ${CHATANYWHERE_MODEL} | 📊 History: ${conversationSummary?.messageCount || 1} messages`);
+
+    // Validate ChatAnywhere API token
+    if (!CHATANYWHERE_API_KEY) {
       return res.status(500).json({
         success: false,
-        error: 'Gemini API key not configured'
+        error: 'ChatAnywhere API token not configured. Please add CHATANYWHERE_API_KEY to your .env file'
       });
     }
 
-    // Step 1: Check if query requires database access
-    const needsDB = dbTools.requiresDatabaseQuery(message);
-    const liveDataSections = [];
-    let cachedStats = null;
-    const wantsFee = /\b(fee|registration fee|cost|price|entry fee|ticket)\b/i.test(message);
-    const wantsPrize = /\b(prize|prize money|price money|reward|winnings)\b/i.test(message);
-    const wantsFree = /\b(free|free entry|no fee|free event)\b/i.test(message);
+    // ===== STEP 1: CLASSIFY USER INTENT =====
+    // Use AI-powered intent classification to understand what the user wants
+    const intentResult = intentClassifier.classifyIntent(message);
+    const responseStrategy = intentClassifier.getResponseStrategy(intentResult);
     
-    if (needsDB) {
-      console.log('🔍 Query requires database access');
+    console.log(`🎯 Intent: ${intentResult.intent} (${(intentResult.confidence * 100).toFixed(1)}% confidence)`);
+    console.log(`📋 Strategy: ${responseStrategy.type}`, responseStrategy);
+
+    // ===== STEP 2: HANDLE DIFFERENT INTENTS =====
+    let liveData = null;
+    
+    // Handle greetings with simple responses
+    if (intentResult.intent === 'GREETING') {
+      const greetings = {
+        hi: `� **Hello!** Welcome to CampusCrew!\n\nI'm here to help you discover amazing events on campus. You can ask me about:\n- Upcoming events\n- Specific event details\n- Events by category (Cultural, Career, Sports, etc.)\n- Platform statistics\n\nWhat would you like to know?`,
+        thanks: `You're very welcome! 😊\n\nIf you need anything else about our events or platform, feel free to ask!`,
+        bye: `Goodbye! 👋\n\nCome back anytime to explore events on CampusCrew. Have a great day!`
+      };
+      
       const messageLower = message.toLowerCase();
-      const eventName = dbTools.extractEventName(message);
-
-      if (eventName) {
-        const matches = await dbTools.searchEvents(eventName);
-        if (matches.length === 1) {
-          const match = matches[0];
-          const eventId = `${match.id}`;
-          const [details, participants, lastDate] = await Promise.all([
-            dbTools.getEventDetails(eventId),
-            dbTools.getParticipantCount(eventId),
-            dbTools.getLastDate(eventId)
-          ]);
-
-          if (details) {
-            const eventLink = `${FRONTEND_BASE_URL}/events/${eventId}`;
-            const eventDate = details.date ? new Date(details.date) : null;
-            const lastRegDate = lastDate && lastDate.lastRegistrationDate ? new Date(lastDate.lastRegistrationDate) : null;
-            
-            liveDataSections.push(`## 🎉 **${details.title}**
-
-### 📋 **Event Details**
-📅 **Date:** ${eventDate ? eventDate.toLocaleDateString('en-US', { 
-              weekday: 'long', 
-              year: 'numeric', 
-              month: 'long', 
-              day: 'numeric' 
-            }) : '**TBA**'}
-⏰ **Time:** ${details.time || '**TBA**'}
-📍 **Location:** ${details.location || '**TBA**'}
-🏷️ **Category:** **${details.category || 'General'}**
-📊 **Status:** **${details.status || 'Active'}**
-      ${wantsFee ? `
-      💵 **Registration Fee:** ${Number.isFinite(details.price) ? (details.price === 0 ? '**FREE**' : `**৳ ${details.price}**`) : '**TBA**'}` : ''}
-${wantsPrize ? `
-🏆 **Prize Money:** ${Number.isFinite(details.prizeMoney) ? `**৳ ${details.prizeMoney}**` : '**TBA**'}` : ''}
-
-### 👥 **Registration Info**
-${participants ? `🎯 **Participants:** **${participants.participantCount ?? 'N/A'}/${participants.maxParticipants ?? 'N/A'}**
-💺 **Spots Remaining:** **${Number.isFinite(participants.spotsRemaining) ? participants.spotsRemaining : 'Unknown'}**
-${participants.isFull ? '⚠️ **Event is FULL** - No more registrations accepted' : '✅ **Spots Available** - Register now!'}` : 'Registration information not available'}
-${lastRegDate ? `📆 **Last Registration:** ${lastRegDate.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}` : ''}
-
-### 🚀 **Take Action**
-      🔗 **[Click here to view full details and register ➤](${eventLink})**`);
-          }
-        } else if (matches.length > 1) {
-          const list = matches.map((event, index) => {
-            const eventId = `${event.id}`;
-            const link = `${FRONTEND_BASE_URL}/events/${eventId}`;
-            const eventDate = event.date ? new Date(event.date) : null;
-            
-            return `#### ${index + 1}. **${event.title}** 🎯
-
-📅 **Date:** ${eventDate ? eventDate.toLocaleDateString('en-US', { 
-              weekday: 'long', 
-              year: 'numeric', 
-              month: 'long', 
-              day: 'numeric' 
-            }) : '**Date TBA**'}
-📍 **Location:** ${event.location || '**Location TBA**'}
-              ${wantsFee ? `
-              💵 **Registration Fee:** ${Number.isFinite(event.price) ? (event.price === 0 ? '**FREE**' : `**৳ ${event.price}**`) : '**TBA**'}` : ''}
-${wantsPrize ? `
-🏆 **Prize Money:** ${Number.isFinite(event.prizeMoney) ? `**৳ ${event.prizeMoney}**` : '**TBA**'}` : ''}
-
-        🔗 **[Click to view details ➤](${link})**
-
----`;
-          }).join('\n\n');
-
-          liveDataSections.push(`## 🔍 **Multiple Events Found**
-
-Found **${matches.length} events** matching **"${eventName}"**:
-
-${list}`);
-        } else {
-          liveDataSections.push(`## ❌ **No Events Found**
-
-Sorry, no events were found matching **"${eventName}"** in our database.
-
-💡 **Tip:** Try searching with different keywords or check for upcoming events in various categories.`);
-        }
+      let greetingResponse = greetings.hi; // default
+      
+      if (/^(thanks|thank\s*you|ty|thx)/.test(messageLower)) {
+        greetingResponse = greetings.thanks;
+      } else if (/^(bye|goodbye|see\s*you|later|cya)/.test(messageLower)) {
+        greetingResponse = greetings.bye;
       }
-
-      // If user asked for free events explicitly
-      if (wantsFree && !eventName) {
-        const upcoming = await dbTools.getUpcomingEvents(20);
-        const freeEvents = (upcoming || []).filter(ev => Number.isFinite(ev.price) && ev.price === 0);
-
-        if (freeEvents.length > 0) {
-          const list = freeEvents.slice(0, 10).map((event, idx) => {
-            const link = `${FRONTEND_BASE_URL}/events/${event.id}`;
-            const eventDate = event.date ? new Date(event.date) : null;
-            return `
-${idx + 1}. **${event.title}**
-   📅 ${eventDate ? eventDate.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' }) : '**TBA**'}
-   📍 ${event.location || '**TBA**'}
-   💵 **FREE**
-   🔗 [View & Register](${link})`;
-          }).join('\n\n');
-
-          liveDataSections.push(`## ✅ **Free Upcoming Events**
-
-Here are events with **no registration fee**:
-
-${list}`);
-        } else {
-          liveDataSections.push(`## ❌ No Free Upcoming Events
-
-We couldn't find any upcoming events with a **FREE** registration right now.
-
-💡 Tip: Check back later or browse all events here: [Upcoming Events](${FRONTEND_BASE_URL}/upcoming-events)`);
-        }
-      }
-
-      // Check for category queries
-      const category = dbTools.extractCategory(message);
-      if (category) {
-        const categoryEvents = await dbTools.getEventsByCategory(category, 10);
-        
-        if (categoryEvents.length > 0) {
-          const upcomingEvents = categoryEvents.filter(e => e.isUpcoming);
-          const pastEvents = categoryEvents.filter(e => !e.isUpcoming);
-          
-          let categoryResponse = `## 🎯 **${category.toUpperCase()}** Category Events
-
-📊 **Found ${categoryEvents.length} total events** (${upcomingEvents.length} upcoming, ${pastEvents.length} past)
-
-`;
-          
-          if (upcomingEvents.length > 0) {
-            if (upcomingEvents.length === 1) {
-              categoryResponse += `### ✨ **FEATURED EVENT** ✨\n\n`;
-            } else {
-              categoryResponse += '### 🚀 **UPCOMING EVENTS**\n\n';
-            }
-            
-            upcomingEvents.forEach((event, index) => {
-              const link = `${FRONTEND_BASE_URL}/events/${event.id}`;
-              const eventDate = event.date ? new Date(event.date) : null;
-              const regDeadline = event.registrationDeadline ? new Date(event.registrationDeadline) : null;
-              
-              if (upcomingEvents.length === 1) {
-                // Single featured event - clean, left-aligned Markdown
-                categoryResponse += `
-#### 🎭 **${event.title}** ✨
-
-📅 ${eventDate ? eventDate.toLocaleDateString('en-US', { 
-          weekday: 'long', 
-          year: 'numeric', 
-          month: 'long', 
-          day: 'numeric' 
-        }) : '**TBA**'}
-📍 ${event.location || '**TBA**'}
-💵 ${Number.isFinite(event.price) ? (event.price === 0 ? '**FREE ENTRY**' : `**Fee:** ৳ ${event.price}`) : '**Fee: TBA**'}
-🏆 ${Number.isFinite(event.prizeMoney) ? `**Prize:** ৳ ${event.prizeMoney}` : '**Prize: TBA**'}
-⏰ Registration closes: ${regDeadline ? regDeadline.toLocaleDateString('en-US', { 
-          month: 'long', 
-          day: 'numeric', 
-          year: 'numeric' 
-        }) : '**TBA**'}
-👥 ${event.participants}/${event.maxParticipants} registered • ${event.maxParticipants - event.participants} spots remaining
-
-🔗 **[Join Event ➤](${link})**
-
-`;
-              } else {
-                // Multiple events - simple list style, left-aligned
-                categoryResponse += `
-#### ${index + 1}. 🎭 **${event.title}** ✨
-
-📅 ${eventDate ? eventDate.toLocaleDateString('en-US', { 
-        weekday: 'long', 
-        year: 'numeric', 
-        month: 'long', 
-        day: 'numeric' 
-      }) : '**TBA**'}
-📍 ${event.location || '**TBA**'}
-💵 ${Number.isFinite(event.price) ? (event.price === 0 ? '**FREE**' : `**Fee:** ৳ ${event.price}`) : '**Fee: TBA**'}
-🏆 ${Number.isFinite(event.prizeMoney) ? `**Prize:** ৳ ${event.prizeMoney}` : '**Prize: TBA**'}
-⏰ Deadline: ${regDeadline ? regDeadline.toLocaleDateString('en-US', { 
-        month: 'long', 
-        day: 'numeric', 
-        year: 'numeric' 
-      }) : '**TBA**'}
-👥 ${event.participants}/${event.maxParticipants} registered (${event.maxParticipants - event.participants} spots left)
-
-🔗 **[Register Here ➤](${link})**
-
-`;
-              }
-            });
-          }
-          
-          if (pastEvents.length > 0) {
-            categoryResponse += '\n### 📅 **PAST EVENTS**\n\n';
-            pastEvents.slice(0, 3).forEach((event, index) => {
-              const link = `${FRONTEND_BASE_URL}/events/${event.id}`;
-              const eventDate = event.date ? new Date(event.date) : null;
-              
-              categoryResponse += `#### ${index + 1}. **${event.title}**
-
-📅 **Date:** ${eventDate ? eventDate.toLocaleDateString('en-US', { 
-                weekday: 'long', 
-                year: 'numeric', 
-                month: 'long', 
-                day: 'numeric' 
-              }) : '**TBA**'}
-📍 **Location:** ${event.location || '**TBA**'}
-
-🔗 **[View event details ➤](${link})**
-
----
-
-`;
-            });
-          }
-          
-          liveDataSections.push(categoryResponse.trim());
-        } else {
-          liveDataSections.push(`## ❌ No Events Found
-
-Sorry, no events were found in the **"${category}"** category in our database.
-
-💡 **Tip:** Try searching for other categories like:
-- **Cultural** - Fashion shows, cultural programs
-- **Arts & Creativity** - Drama, film screenings  
-- **Career & Professional Development** - Career fairs, workshops
-- **Environment** - Clean-up drives, eco events
-- **Literary / Speaking** - Debate competitions, literary events
-- **Seminar** - Educational workshops, bootcamps`);
-        }
-      }
-
-      if (messageLower.includes('upcoming')) {
-        const [stats, upcoming] = await Promise.all([
-          cachedStats ? Promise.resolve(cachedStats) : dbTools.getEventStats(),
-          dbTools.getUpcomingEvents(10)
-        ]);
-        cachedStats = stats;
-
-        if (upcoming.length > 0) {
-          const totalUpcoming = stats?.upcomingEvents ?? upcoming.length;
-          
-          const overview = upcoming.slice(0, 5).map((event, index) => {
-            const link = `${FRONTEND_BASE_URL}/events/${event.id}`;
-            const eventDate = event.date ? new Date(event.date) : null;
-            
-            return `
-#### ${index + 1}. 🎪 **${event.title}** ✨
-
-📅 **Date:** ${eventDate ? eventDate.toLocaleDateString('en-US', { 
-              weekday: 'long', 
-              year: 'numeric', 
-              month: 'long', 
-              day: 'numeric' 
-            }) : '**TBA**'}${event.time ? ` at **${event.time}**` : ''}
-📍 **Location:** ${event.location || '**TBA**'}
-💵 **Fee:** ${Number.isFinite(event.price) ? (event.price === 0 ? '**FREE**' : `**৳ ${event.price}**`) : '**TBA**'}
-🏆 **Prize:** ${Number.isFinite(event.prizeMoney) ? `**৳ ${event.prizeMoney}**` : '**TBA**'}
-👥 **Participants:** **${event.participants ?? 'N/A'}/${event.maxParticipants ?? 'N/A'}**
-💺 **Spots Remaining:** **${Number.isFinite(event.spotsRemaining) ? event.spotsRemaining : 'Unknown'}**
-
-🔗 [**View Details & Register ➤**](${link})`;
-          }).join('\n\n');
-
-          liveDataSections.push(`## 🚀 **Upcoming Events Summary**
-
-📊 **Total upcoming events:** **${totalUpcoming}**
-👇 **Showing the ${Math.min(5, upcoming.length)} soonest events:**
-
-${overview}`);
-        } else {
-          liveDataSections.push(`## 📅 **No Upcoming Events**
-
-Currently, there are no upcoming events scheduled in our database.
-
-💡 **Stay tuned!** New events are added regularly. Check back soon for exciting opportunities!`);
-        }
-      }
-
-      if (messageLower.includes('stat')) {
-        if (!cachedStats) {
-          cachedStats = await dbTools.getEventStats();
-        }
-        if (cachedStats) {
-          liveDataSections.push(`## 📊 **Platform Statistics**
-
-### 🎯 **Event Overview**
-🎪 **Total Events:** **${cachedStats.totalEvents}**
-🚀 **Upcoming Events:** **${cachedStats.upcomingEvents}**  
-📅 **Past Events:** **${cachedStats.pastEvents}**
-
-### 👥 **Community Engagement**
-📝 **Total Registrations:** **${cachedStats.totalRegistrations}**
-
----
-
-💡 **Ready to join an event?** Ask me about upcoming events or specific categories!`);
-        }
-      }
-    }
-
-    const liveData = liveDataSections.join('\n\n');
-
-    // If we already built a live, formatted answer from the database,
-    // return it directly to preserve exact Markdown, emojis, and hyperlinks.
-    if (liveDataSections.length > 0) {
+      
+      conversationMemory.addMessage(effectiveUserId, 'assistant', greetingResponse, {
+        model: 'intent-greeting',
+        timestamp: Date.now()
+      });
+      
       return res.json({
         success: true,
-        response: liveData,
-        model: 'live-db',
+        response: greetingResponse,
+        model: 'intent-greeting',
         timestamp: new Date().toISOString()
       });
     }
-
-    // Step 2: Try ChromaDB first, fallback to regular embeddings
-    let context = '';
-    const chromaStats = await chromaManager.getStats();
     
-    if (chromaStats.available && chromaStats.count > 0) {
-      console.log('📊 Using ChromaDB for context retrieval');
-      const results = await chromaManager.querySimilar(message, 5);
+    // Handle database queries (events, stats, etc.)
+    if (responseStrategy.useDatabase) {
+      console.log('� Processing database query...');
       
-      if (results.length > 0) {
-        context = results
-          .map((result, index) => 
-            `[Source ${index + 1}: ${result.metadata.title || 'Document'} (Relevance: ${(result.similarity * 100).toFixed(1)}%)]\n${result.content.substring(0, 1000)}...`
-          )
-          .join('\n\n---\n\n');
+      liveData = await eventQueryHandler.handleEventQuery(
+        intentResult,
+        responseStrategy,
+        FRONTEND_BASE_URL
+      );
+      
+      if (liveData) {
+        console.log('✅ Successfully generated event response from database');
+        
+        // Add to conversation memory
+        conversationMemory.addMessage(effectiveUserId, 'assistant', liveData, {
+          model: 'live-db',
+          intent: intentResult.intent,
+          timestamp: Date.now()
+        });
+        
+        // Return database response directly
+        return res.json({
+          success: true,
+          response: liveData,
+          model: 'live-db',
+          intent: intentResult.intent,
+          timestamp: new Date().toISOString()
+        });
+      } else {
+        console.log('⚠️ Database query returned no results, falling back to RAG...');
+        // Fall through to RAG processing below
       }
     }
+
+    // ===== STEP 3: Simplified context retrieval - Qdrant + Simple Fallback =====
+    let context = '';
+    let vectorSearchUsed = false;
+    let searchMetadata = {};
     
-    // Fallback to regular embedding service
-    if (!context) {
-      console.log('📚 Using fallback embedding service');
+    // Check if this is a contact-related query
+    const isContactQuery = /\b(contact|address|phone|email|location|reach|call)\b/i.test(message);
+    
+    try {
+      // Primary: Qdrant Vector Database (semantic search)
+      console.log('🔍 Searching Qdrant vector database...');
+      const qdrantResults = await qdrantService.searchRelevantDocuments(message, effectiveUserId);
+      
+      if (qdrantResults.success && qdrantResults.documents.length > 0) {
+        console.log(`✅ Qdrant found ${qdrantResults.documents.length} relevant documents`);
+        
+        // Check if contact document is in results
+        const hasContactDoc = qdrantResults.documents.some(doc => 
+          (doc.payload?.source || '').toLowerCase().includes('contact')
+        );
+        
+        // If this is a contact query but contact.txt is not in top results, force include it
+        if (isContactQuery && !hasContactDoc) {
+          console.log('🎯 Contact query detected but contact.txt not in results - adding keyword fallback');
+          const keywordContext = await getSimpleContext(message);
+          if (keywordContext) {
+            context = keywordContext;
+            console.log('✅ Using keyword-based context for contact query');
+          }
+        }
+        
+        // If we don't have context yet, use Qdrant results
+        if (!context) {
+          // Format context from Qdrant results
+          context = qdrantResults.documents
+            .map((doc, index) => {
+              const score = (doc.score * 100).toFixed(1);
+              const content = doc.payload.content || '';
+              const source = doc.payload.source || doc.payload.title || 'Document';
+              return `[Source ${index + 1}: ${source} (Relevance: ${score}%)]\n${content.substring(0, 1500)}`;
+            })
+            .join('\n\n---\n\n');
+          
+          vectorSearchUsed = true;
+          searchMetadata = {
+            searchTime: qdrantResults.searchTime,
+            documentsFound: qdrantResults.documents.length,
+            embeddingModel: qdrantResults.embeddingModel
+          };
+        }
+        
+        console.log(`📊 Context retrieved: ${context.length} characters from ${qdrantResults.documents.length} sources`);
+      } else {
+        console.log('⚠️ Qdrant returned no relevant documents, falling back to keyword search...');
+        throw new Error('No relevant documents found in vector database');
+      }
+      
+    } catch (qdrantError) {
+      // Fallback: Simple keyword search (always reliable)
+      console.log('📚 Using simple keyword search fallback');
+      console.log(`   Reason: ${qdrantError.message}`);
+      
       try {
-        context = await embeddingService.getContextForPrompt(message);
-      } catch (error) {
-        console.error('Error getting context from embeddings:', error.message);
+        context = await getSimpleContext(message);
+        if (context) {
+          console.log(`✅ Keyword search found context: ${context.length} characters`);
+        }
+      } catch (fallbackError) {
+        console.error('❌ Keyword search also failed:', fallbackError.message);
       }
     }
 
+    // Final fallback message if no context found
     if (!context) {
-      console.log('⚠️  Trying simple keyword search...');
-      context = await getSimpleContext(message);
-    }
-
-    if (!context) {
-      context = 'I have access to information about CampusCrew, but I\'m having trouble retrieving it right now.';
+      context = 'I have access to information about CampusCrew, but I\'m having trouble retrieving it right now. Please try asking about specific features, events, or contact information.';
+      console.log('⚠️ No context retrieved from any source');
     }
 
     // Step 3: Build conversation history text
@@ -482,7 +358,7 @@ Currently, there are no upcoming events scheduled in our database.
       conversationText += `${msg.role === 'user' ? 'User' : 'Assistant'}: ${msg.content}\n`;
     }
 
-    // Step 4: Build the full prompt for Gemini
+    // Step 4: Build the full prompt for Hugging Face Chat API
     const fullPrompt = `You are a helpful assistant for CampusCrew, an event management platform. 
 Your role is to answer questions about the website, its features, and help users navigate the platform.
 
@@ -498,65 +374,176 @@ ${conversationText ? `Previous conversation:\n${conversationText}\n` : ''}
 User: ${message}
 Assistant:`;
 
-    // Step 5: Call Gemini API
+    // Step 5: Call ChatAnywhere GPT API
     let botResponse;
-    let usedModel = CHAT_MODEL;
-    const modelParams = { model: CHAT_MODEL };
-    const requestOptions = { apiVersion: API_VERSION };
+    let usedModel = CHATANYWHERE_MODEL;
+    let lastErr;
+
+    // Helper function to call ChatAnywhere GPT API (OpenAI-compatible)
+    async function query(data) {
+      const response = await axios.post(
+        CHATANYWHERE_API_URL,
+        data,
+        {
+          headers: {
+            Authorization: `Bearer ${CHATANYWHERE_API_KEY}`,
+            "Content-Type": "application/json",
+          }
+        }
+      );
+      return response.data;
+    }
 
     try {
-      const model = genAI.getGenerativeModel(modelParams, requestOptions);
-      const generationConfig = { temperature: 0.7 };
-      if (HAS_MAX_TOKENS) {
-        generationConfig.maxOutputTokens = MAX_OUTPUT_TOKENS;
-      }
-      const requestPayload = {
-        contents: [{ role: 'user', parts: [{ text: fullPrompt }] }],
-        generationConfig,
-      };
-      const result = await model.generateContent(requestPayload);
-      botResponse = result.response.text();
-    } catch (modelError) {
-      console.error(`Primary model (${CHAT_MODEL}) failed:`, modelError.message);
+      console.log(`🤖 Using ChatAnywhere GPT model: ${CHATANYWHERE_MODEL}`);
+      
+      const result = await query({
+        messages: [
+          {
+            role: "system",
+            content: `You are a specialized customer support assistant EXCLUSIVELY for CampusCrew, an event management platform. 
 
-      if (!CHAT_MODEL.includes('gemini-pro')) {
-        try {
-          const fallbackModel = genAI.getGenerativeModel({ model: FALLBACK_CHAT_MODEL }, requestOptions);
-          const generationConfig = { temperature: 0.7 };
-          if (HAS_MAX_TOKENS) {
-            generationConfig.maxOutputTokens = MAX_OUTPUT_TOKENS;
+🚫 CRITICAL RESTRICTIONS:
+- You can ONLY answer questions about CampusCrew platform, its features, events, and services
+- You MUST refuse to answer ANY question unrelated to CampusCrew (e.g., cooking, general knowledge, other topics)
+- If asked about unrelated topics, politely say: "I'm sorry, but I can only assist with questions about CampusCrew platform and its events. Please ask me about CampusCrew features, events, registration, or how to use the platform."
+
+✅ TOPICS YOU CAN HELP WITH:
+- CampusCrew platform features and how to use them
+- Event browsing, registration, and management
+- Account creation and profile management
+- Event categories (Sports, Cultural, Academic, etc.)
+- Certificates, payments, and registration process
+- Platform navigation and troubleshooting
+- Contact information and support (address, phone, email)
+- About CampusCrew, team information, and platform details
+
+IMPORTANT: Questions about CampusCrew's address, phone number, email, contact information, team members, or "about us" information ARE CAMPUSCREW-RELATED and should be answered using the context provided below.
+
+Use the following information from the website's knowledge base to answer questions:
+
+${context}
+
+${vectorSearchUsed && searchMetadata.documentsFound > 0 ? `
+🔍 VECTOR DATABASE CONTEXT:
+This information was retrieved using semantic search from ${searchMetadata.documentsFound} relevant sources.
+Search completed in ${searchMetadata.searchTime}ms.
+` : ''}
+
+${liveData ? `IMPORTANT - Here is LIVE, REAL-TIME data from the database. Use this for the most accurate, up-to-date information:${liveData}` : ''}
+
+${memoryContext ? `
+💭 CONVERSATION MEMORY:
+${memoryContext}
+
+IMPORTANT: Use this conversation history to provide contextual responses. If the user refers to "it", "that", "the event I mentioned", or similar references, look at the conversation history to understand what they're referring to. Maintain conversation continuity and acknowledge previous topics when relevant.
+` : ''}
+
+${conversationSummary && conversationSummary.messageCount > 1 ? `
+📊 CONVERSATION SUMMARY: This user has sent ${conversationSummary.messageCount} messages. Topics discussed: ${conversationSummary.topics.join(', ') || 'general questions'}. Conversation duration: ${Math.round(conversationSummary.duration / 60000)} minutes.
+` : ''}
+
+If the question is about CampusCrew but the information is not in the provided context, politely inform the user and suggest they contact support at campuscrew@gmail.com or explore the website. Keep responses friendly, concise, and helpful. Use conversation history to provide more personalized and contextual responses.
+
+REMEMBER: NEVER answer questions unrelated to CampusCrew!`
+          },
+          {
+            role: "user",
+            content: message
           }
-          const fallbackResult = await fallbackModel.generateContent({
-            contents: [{ role: 'user', parts: [{ text: fullPrompt }] }],
-            generationConfig,
-          });
-          botResponse = fallbackResult.response.text();
-          usedModel = FALLBACK_CHAT_MODEL;
-        } catch (fallbackError) {
-          console.error(`Fallback model (${FALLBACK_CHAT_MODEL}) also failed:`, fallbackError.message);
-          throw fallbackError;
+        ],
+        model: CHATANYWHERE_MODEL,
+        max_tokens: CHATANYWHERE_MAX_TOKENS,
+        temperature: 0.7,
+        top_p: 0.9
+      });
+
+      if (result.choices && result.choices.length > 0) {
+        botResponse = result.choices[0].message.content;
+        
+        // Clean up unwanted model artifacts from responses
+        if (botResponse) {
+          // Remove <think>...</think> tags and content
+          botResponse = botResponse.replace(/<think>[\s\S]*?<\/think>/gi, '');
+          // Remove standalone <think> or </think> tags
+          botResponse = botResponse.replace(/<\/?think>/gi, '');
+          // Clean up extra whitespace
+          botResponse = botResponse.replace(/^\s+|\s+$/g, '').replace(/\n\s*\n\s*\n/g, '\n\n');
+          // If response is empty after cleaning, provide a fallback
+          if (!botResponse.trim()) {
+            botResponse = "I'd be happy to help you with information about CampusCrew events. Could you please rephrase your question?";
+          }
         }
+        
+        usedModel = CHATANYWHERE_MODEL;
+        console.log(`✅ Successfully got response from ${usedModel}`);
+      } else if (result.error) {
+        throw new Error(result.error.message || 'API returned error');
       } else {
-        throw modelError;
+        throw new Error('No response received from API');
       }
+    } catch (err) {
+      lastErr = err;
+      console.error('ChatAnywhere API error:', err.message);
     }
+
+    if (!botResponse && lastErr) {
+      // Enhanced fallback with basic keyword-based responses
+      const messageLower = message.toLowerCase();
+      const upcomingUrl = `${FRONTEND_BASE_URL}/upcoming-events`;
+      let fallbackText;
+
+      if (/\b(sport|sports|football|cricket|badminton|basketball|soccer|volleyball|tennis|athletic|e-?sports)\b/i.test(message)) {
+        fallbackText = `🏆 **Sports Events**\n\nI'm having trouble with my AI models right now, but I can help you find sports events! Visit ${upcomingUrl} and search for "Sports" to see all available athletic activities.`;
+      } else if (messageLower.includes('hello') || messageLower.includes('hi') || messageLower.includes('hey')) {
+        fallbackText = `👋 **Hello there!**\n\nWelcome to CampusCrew! I'm having some technical difficulties with my AI models, but I'm still here to help. You can:\n\n• Browse upcoming events: ${upcomingUrl}\n• Create your own events\n• Join interesting activities\n\nWhat would you like to explore?`;
+      } else if (messageLower.includes('event') || messageLower.includes('activity')) {
+        fallbackText = `📅 **Events & Activities**\n\nI'm currently having AI model issues, but you can still explore all our amazing events! Check out ${upcomingUrl} to see what's happening on campus.`;
+      } else {
+        fallbackText = `🤖 **CampusCrew Assistant**\n\nI'm experiencing some technical difficulties with my AI models right now. While I work on getting back to full capacity, feel free to:\n\n• Explore events: ${upcomingUrl}\n• Contact support if you need immediate help\n\nSorry for the inconvenience!`;
+      }
+
+      return res.json({
+        success: true,
+        response: fallbackText,
+        model: 'local-fallback',
+        timestamp: new Date().toISOString()
+      });
+    }
+
+    // Add assistant response to conversation memory
+    conversationMemory.addMessage(effectiveUserId, 'assistant', botResponse, {
+      model: usedModel,
+      vectorSearch: vectorSearchUsed ? searchMetadata : null,
+      timestamp: Date.now()
+    });
 
     // Return response
     res.json({
       success: true,
       response: botResponse,
       model: usedModel,
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
+      metadata: {
+        vectorSearchUsed,
+        searchTime: searchMetadata.searchTime,
+        documentsFound: searchMetadata.documentsFound
+      },
+      conversationInfo: {
+        messageCount: conversationSummary?.messageCount || 1,
+        topics: conversationSummary?.topics || [],
+        hasMemory: !!memoryContext
+      }
     });
 
   } catch (error) {
     console.error('Chat error:', error);
     
-    // Handle specific Gemini errors
+    // Handle specific Hugging Face errors
     if (error.message?.includes('API key')) {
       return res.status(500).json({
         success: false,
-        error: 'Invalid Gemini API key'
+        error: 'Invalid Hugging Face API key'
       });
     }
     
@@ -580,15 +567,32 @@ Assistant:`;
  */
 router.get('/chat/health', async (req, res) => {
   try {
-    const hasApiKey = !!process.env.GEMINI_API_KEY;
-    const isInitialized = embeddingService.initialized;
+    const hasToken = !!CHATANYWHERE_API_KEY;
+    const configuredModel = CHATANYWHERE_MODEL;
+    
+    // Check Qdrant connection
+    let qdrantStatus = { healthy: false, error: 'Not tested' };
+    try {
+      qdrantStatus = await qdrantService.testConnection();
+    } catch (error) {
+      qdrantStatus = { healthy: false, error: error.message };
+    }
     
     res.json({
       success: true,
-      status: hasApiKey && isInitialized ? 'ready' : 'not_ready',
-      hasApiKey,
-      isInitialized,
-      embeddingsCount: embeddingService.embeddings.length
+      status: hasToken && qdrantStatus.healthy ? 'ready' : 'degraded',
+      hasToken,
+      vectorDatabase: {
+        type: 'Qdrant',
+        status: qdrantStatus.healthy ? 'connected' : 'disconnected',
+        collection: process.env.QDRANT_COLLECTION || 'campuscrew_docs',
+        error: qdrantStatus.error
+      },
+      aiModel: {
+        name: configuredModel,
+        provider: 'ChatAnywhere GPT'
+      },
+      apiPermission: hasToken ? 'Available (ChatAnywhere API)' : 'Missing CHATANYWHERE_API_KEY'
     });
   } catch (error) {
     res.status(500).json({
@@ -600,38 +604,38 @@ router.get('/chat/health', async (req, res) => {
 
 /**
  * POST /chat/reload-knowledge
- * Reload knowledge base (useful after updating content)
+ * Reload Qdrant vector database (run setup_vector_db.js manually)
  */
 router.post('/chat/reload-knowledge', async (req, res) => {
   try {
-    embeddingService.embeddings = [];
-    embeddingService.initialized = false;
-    await embeddingService.loadKnowledgeBase();
+    // Test Qdrant connection
+    const connectionTest = await qdrantService.testConnection();
     
-    // Also reload ChromaDB if available
-    const contentDir = path.join(__dirname, '../data/website_content');
-    let chromaCount = 0;
-    
-    try {
-      if (!chromaManager.initialized) {
-        await chromaManager.initialize();
-      }
-      chromaCount = await chromaManager.loadDocuments(contentDir);
-    } catch (error) {
-      console.log('ChromaDB reload skipped:', error.message);
+    if (!connectionTest.success) {
+      return res.status(503).json({
+        success: false,
+        message: 'Cannot connect to Qdrant vector database',
+        error: connectionTest.error,
+        instructions: 'Run: node setup_vector_db.js to populate the database'
+      });
     }
+    
+    // Get collection info
+    const collectionInfo = await qdrantService.vectorDB.getCollectionInfo();
     
     res.json({
       success: true,
-      message: 'Knowledge base reloaded',
-      documentsLoaded: embeddingService.embeddings.length,
-      chromaDocuments: chromaCount
+      message: 'Qdrant vector database is ready',
+      collection: collectionInfo.collectionName,
+      vectorCount: collectionInfo.vectorsCount,
+      instructions: 'To update content: 1) Edit files in data/website_content/, 2) Run: node setup_vector_db.js'
     });
   } catch (error) {
-    console.error('Error reloading knowledge base:', error);
+    console.error('Error checking Qdrant:', error);
     res.status(500).json({
       success: false,
-      error: 'Failed to reload knowledge base'
+      error: 'Failed to check vector database',
+      instructions: 'Run: node setup_vector_db.js to populate the database'
     });
   }
 });
@@ -639,7 +643,7 @@ router.post('/chat/reload-knowledge', async (req, res) => {
 /**
  * POST /chat/crawl
  * Crawl website and update knowledge base
- * Uses Firecrawl if configured, falls back to basic crawler
+ * Note: After crawling, you must run setup_vector_db.js to index into Qdrant
  */
 router.post('/chat/crawl', async (req, res) => {
   try {
@@ -649,108 +653,29 @@ router.post('/chat/crawl', async (req, res) => {
     console.log(`Starting crawl of ${frontendUrl}...`);
     
     let pageCount = 0;
-    let crawlMethod = 'basic';
     
-    // Try Firecrawl first if configured
-    if (firecrawlService.isConfigured()) {
-      try {
-        console.log('Using Firecrawl for advanced scraping...');
-        firecrawlService.baseUrl = frontendUrl;
-        const result = await firecrawlService.crawlAndSave();
-        
-        if (result.success) {
-          pageCount = result.successful;
-          crawlMethod = 'firecrawl';
-          console.log(`✅ Firecrawl: Successfully crawled ${pageCount} pages`);
-        } else {
-          console.log('⚠️ Firecrawl failed, falling back to basic crawler...');
-          throw new Error('Firecrawl failed');
-        }
-      } catch (error) {
-        console.log('Firecrawl error:', error.message);
-        console.log('Falling back to basic crawler...');
-        
-        // Fallback to basic crawler
-        const crawler = new WebsiteCrawler(frontendUrl);
-        pageCount = await crawler.crawl(outputDir);
-        crawlMethod = 'basic';
-      }
-    } else {
-      // Use basic crawler if Firecrawl not configured
-      console.log('Using basic crawler (Firecrawl not configured)...');
-      const crawler = new WebsiteCrawler(frontendUrl);
-      pageCount = await crawler.crawl(outputDir);
-    }
-    
-    // Reload knowledge base after crawling
-    embeddingService.embeddings = [];
-    embeddingService.initialized = false;
-    await embeddingService.loadKnowledgeBase();
-    
-    // Load into ChromaDB if available
-    let chromaLoaded = false;
-    try {
-      if (!chromaManager.initialized) {
-        await chromaManager.initialize();
-      }
-      await chromaManager.loadDocuments(outputDir);
-      chromaLoaded = true;
-    } catch (error) {
-      console.log('ChromaDB indexing skipped:', error.message);
-    }
+    // Use basic crawler (Firecrawl and other crawlers removed for simplicity)
+    console.log('Using basic crawler...');
+    const WebsiteCrawler = require('../utils/crawler');
+    const crawler = new WebsiteCrawler(frontendUrl);
+    pageCount = await crawler.crawl(outputDir);
     
     res.json({
       success: true,
-      message: 'Website crawled and indexed',
-      crawlMethod: crawlMethod,
+      message: 'Website crawled successfully',
       pagesCrawled: pageCount,
-      documentsIndexed: embeddingService.embeddings.length,
-      chromaEnabled: chromaLoaded
+      outputDirectory: outputDir,
+      nextSteps: [
+        'Files saved to data/website_content/',
+        'Run: node setup_vector_db.js to index into Qdrant',
+        'Then your chatbot will use the updated content'
+      ]
     });
   } catch (error) {
-    console.error('Error crawling website:', error);
+    console.error('Crawl error:', error);
     res.status(500).json({
       success: false,
       error: 'Failed to crawl website',
-      details: error.message
-    });
-  }
-});
-
-/**
- * POST /chat/index
- * Index existing documents in ChromaDB
- */
-router.post('/chat/index', async (req, res) => {
-  try {
-    const contentDir = path.join(__dirname, '../data/website_content');
-    
-    // Initialize ChromaDB if needed
-    if (!chromaManager.initialized) {
-      const initialized = await chromaManager.initialize();
-      if (!initialized) {
-        return res.status(500).json({
-          success: false,
-          error: 'ChromaDB not available. Make sure it is running.'
-        });
-      }
-    }
-    
-    // Load documents
-    const count = await chromaManager.loadDocuments(contentDir);
-    const stats = await chromaManager.getStats();
-    
-    res.json({
-      success: true,
-      message: 'Documents indexed in ChromaDB',
-      documentsIndexed: count,
-      totalInCollection: stats.count
-    });
-  } catch (error) {
-    console.error('Error indexing documents:', error);
-    res.status(500).json({
-      success: false,
-      error: 'Failed to index documents',
       details: error.message
     });
   }
@@ -762,27 +687,53 @@ router.post('/chat/index', async (req, res) => {
  */
 router.get('/chat/stats', async (req, res) => {
   try {
-    const chromaStats = await chromaManager.getStats();
     const dbStats = await dbTools.getEventStats();
+    
+    // Get Qdrant stats
+    let qdrantStats = { available: false, vectorCount: 0 };
+    try {
+      const collectionInfo = await qdrantService.vectorDB.getCollectionInfo();
+      qdrantStats = {
+        available: true,
+        collection: collectionInfo.collectionName,
+        vectorCount: collectionInfo.vectorsCount
+      };
+    } catch (error) {
+      qdrantStats.error = error.message;
+    }
     
     res.json({
       success: true,
-      knowledge: {
-        embeddingsLoaded: embeddingService.embeddings.length,
-        chromaDB: chromaStats
-      },
+      vectorDatabase: qdrantStats,
       database: dbStats,
-      crawlers: {
-        firecrawl: firecrawlService.isConfigured(),
-        basicCrawler: true
-      },
-      apiKey: !!process.env.GEMINI_API_KEY
+      groqApiKey: !!GROQ_API_KEY
     });
   } catch (error) {
     res.status(500).json({
       success: false,
       error: error.message
     });
+  }
+});
+
+/**
+ * GET /chat/models
+ * Provide current Hugging Face model info (static), since HF Inference API does not list models per key
+ */
+router.get('/chat/models', async (req, res) => {
+  try {
+    if (!GROQ_API_KEY) {
+      return res.status(400).json({ success: false, error: 'GROQ_API_KEY not configured' });
+    }
+    res.json({
+      success: true,
+      count: 1,
+      models: [{ name: GROQ_MODEL, provider: 'Groq', note: 'Configured model for chat completions' }]
+    });
+  } catch (error) {
+    const status = error.response?.status || error.status || 500;
+    const message = error.response?.data?.error?.message || error.message;
+    res.status(status).json({ success: false, error: message });
   }
 });
 
@@ -820,6 +771,261 @@ router.post('/chat/test-firecrawl', async (req, res) => {
       success: false,
       error: error.message,
       configured: firecrawlService.isConfigured()
+    });
+  }
+});
+
+/**
+ * GET /chat-status
+ * Get RAG system status for frontend testing
+ */
+router.get('/chat-status', async (req, res) => {
+  try {
+    // Get RAG system status
+    const ragStatus = ragSystem.getStatus();
+    
+    // Check if localhost is accessible
+    const localhostTest = await ragSystem.checkLocalhost();
+    
+    res.json({
+      success: true,
+      rag: {
+        initialized: ragStatus.initialized,
+        totalChunks: ragStatus.totalChunks,
+        hasLiveData: ragStatus.hasLiveData,
+        sources: ragStatus.sources,
+        localhostDetected: localhostTest
+      },
+      aiModel: HF_MODEL,
+      timestamp: new Date().toISOString()
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: error.message,
+      rag: { initialized: false }
+    });
+  }
+});
+
+/**
+ * GET /chat/rag-status
+ * Get RAG system status and statistics including auto-scraping
+ */
+router.get('/chat/rag-status', async (req, res) => {
+  try {
+    // Get both RAG systems status
+    const standardStatus = ragSystem.getStatus();
+    const autoStatus = autoRAG.getStatus();
+    
+    // Test a sample query to verify functionality
+    const testQuery = 'How to create events';
+    const autoTestResult = await autoRAG.processQuery(testQuery);
+    
+    res.json({
+      success: true,
+      rag: {
+        standard: {
+          initialized: standardStatus.initialized,
+          totalChunks: standardStatus.totalChunks,
+          hasLiveData: standardStatus.hasLiveData,
+          sources: standardStatus.sources
+        },
+        autoScraping: {
+          initialized: autoStatus.initialized,
+          totalChunks: autoStatus.totalChunks,
+          staticChunks: autoStatus.staticChunks,
+          liveChunks: autoStatus.liveChunks,
+          scrapedPages: autoStatus.scrapedPages,
+          autoScrapeEnabled: autoStatus.autoScrapeEnabled,
+          lastScrapeTime: autoStatus.lastScrapeTime,
+          sources: autoStatus.sources
+        },
+        testQuery: {
+          query: testQuery,
+          hasRelevantInfo: autoTestResult?.hasRelevantInfo || false,
+          confidence: autoTestResult?.confidence || 0,
+          liveChunks: autoTestResult?.liveChunks || 0,
+          responseTime: autoTestResult?.responseTime || 0
+        }
+      },
+      config: {
+        ragEnabled: process.env.RAG_ENABLED === 'true',
+        autoScrapeEnabled: process.env.RAG_AUTO_SCRAPE === 'true',
+        scrapeInterval: process.env.RAG_SCRAPE_INTERVAL || '300000',
+        hfModel: process.env.HF_MODEL,
+        frontendUrl: process.env.frontend_url,
+        backendUrl: process.env.backend_url
+      }
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: error.message,
+      rag: { initialized: false }
+    });
+  }
+});
+
+/**
+ * POST /chat/refresh-pages
+ * Manually trigger page scraping for new content
+ */
+router.post('/chat/refresh-pages', async (req, res) => {
+  try {
+    console.log('🔄 Manual page refresh requested...');
+    const refreshedStatus = await autoRAG.refreshPages();
+    
+    res.json({
+      success: true,
+      message: 'Pages refreshed successfully',
+      rag: {
+        totalChunks: refreshedStatus.totalChunks,
+        staticChunks: refreshedStatus.staticChunks,
+        liveChunks: refreshedStatus.liveChunks,
+        scrapedPages: refreshedStatus.scrapedPages,
+        lastScrapeTime: refreshedStatus.lastScrapeTime
+      },
+      timestamp: new Date().toISOString()
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+/**
+ * POST /chat/refresh-pages
+ * Manually trigger auto-scraping of localhost pages
+ */
+router.post('/chat/refresh-pages', async (req, res) => {
+  try {
+    console.log('🔄 Manual page refresh triggered via API');
+    
+    await ragSystem.manualRefresh();
+    const status = ragSystem.getStatus();
+    
+    res.json({
+      success: true,
+      message: 'Page refresh completed',
+      rag: {
+        totalChunks: status.totalChunks,
+        staticChunks: status.staticChunks,
+        liveChunks: status.liveChunks,
+        scrapedPages: status.scrapedPages,
+        lastScrapeTime: status.lastScrapeTime ? new Date(status.lastScrapeTime).toISOString() : null
+      },
+      timestamp: new Date().toISOString()
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+/**
+ * GET /chat/memory-status
+ * Get conversation memory statistics
+ */
+router.get('/chat/memory-status', async (req, res) => {
+  try {
+    const stats = conversationMemory.getStats();
+    
+    res.json({
+      success: true,
+      memory: {
+        totalUsers: stats.totalUsers,
+        activeUsers: stats.activeUsers,
+        totalMessages: stats.totalMessages,
+        averageMessages: stats.averageMessages,
+        memoryUsage: stats.memoryUsage,
+        maxMessages: conversationMemory.maxMessages,
+        sessionTimeout: conversationMemory.sessionTimeout / (1000 * 60) // minutes
+      },
+      timestamp: new Date().toISOString()
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+/**
+ * GET /chat/conversation/:userId
+ * Get conversation history for a specific user
+ */
+router.get('/chat/conversation/:userId', async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const conversation = conversationMemory.getConversation(userId);
+    const summary = conversationMemory.getConversationSummary(userId);
+    
+    res.json({
+      success: true,
+      conversation: {
+        messages: conversation,
+        summary: summary,
+        hasOngoing: conversationMemory.hasOngoingConversation(userId)
+      },
+      timestamp: new Date().toISOString()
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+/**
+ * DELETE /chat/conversation/:userId
+ * Clear conversation history for a specific user
+ */
+router.delete('/chat/conversation/:userId', async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const cleared = conversationMemory.clearConversation(userId);
+    
+    res.json({
+      success: true,
+      message: cleared ? 'Conversation history cleared' : 'No conversation found',
+      cleared,
+      timestamp: new Date().toISOString()
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+/**
+ * POST /chat/greeting/:userId
+ * Get personalized greeting for a user based on conversation history
+ */
+router.post('/chat/greeting/:userId', async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const greeting = conversationMemory.getPersonalizedGreeting(userId);
+    const summary = conversationMemory.getConversationSummary(userId);
+    
+    res.json({
+      success: true,
+      greeting,
+      conversationSummary: summary,
+      timestamp: new Date().toISOString()
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: error.message
     });
   }
 });

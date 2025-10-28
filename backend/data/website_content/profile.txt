@@ -184,6 +184,48 @@ From your profile, you can:
 - Update preferences
 - Contact support
 
+**How to Download Certificates:**
+Certificates are available in the Profile section:
+1. Click on your Profile Icon (top right corner of the page)
+2. Click "View Certificates" button in your profile
+3. You'll see a list of all certificates you've earned
+4. Each certificate shows:
+   - Event name
+   - Event date
+   - Certificate status (Available/Pending)
+   - Download button
+5. Click "Download Certificate" next to the event
+6. Certificate downloads as a PDF file
+7. Save it to your device or print it
+
+**Certificate Availability:**
+- Certificates are issued ONLY for events you attended
+- Organizer must mark your attendance as "Attended"
+- Certificates usually become available within 24-48 hours after the event
+- Check your profile's "View Certificates" section regularly
+- You'll receive an email notification when certificate is ready
+
+**Certificate Requirements:**
+✅ Must have registered for the event
+✅ Must have attended the event
+✅ Attendance must be marked by organizer
+✅ Payment completed (for paid events)
+⚠️ Certificates are NOT available if attendance is "Not Attended"
+
+**Certificate Troubleshooting:**
+If you don't see your certificate:
+1. Confirm your attendance status is "Attended" (check with organizer)
+2. Wait 24-48 hours after event completion
+3. Check if payment is completed (for paid events)
+4. Contact event organizer to verify attendance marking
+5. Email support@campuscrew.com if issue persists
+
+**Where to Find View Certificates Button:**
+- Login to CampusCrew
+- Click your Profile Icon (top right corner)
+- Look for "View Certificates" button in your profile page
+- This button shows all your earned certificates in one place
+
 Account Security:
 Keep your account secure:
 - Use strong, unique password

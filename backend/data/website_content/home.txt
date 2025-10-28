@@ -15,7 +15,7 @@ Key Features:
 - Payment Integration: Seamless bKash payment gateway for paid events
 - Email Notifications: Automated emails for registrations, confirmations, and reminders
 - User-friendly Dashboard: Comprehensive admin dashboard with analytics and insights
-- AI Chatbot Assistant: Get instant answers powered by Google Gemini AI
+- AI Chatbot Assistant: Get instant answers powered by Hugging Face AI models
 - Dark Mode Support: Comfortable viewing experience in any lighting
 - Mobile Responsive: Works perfectly on all devices
 

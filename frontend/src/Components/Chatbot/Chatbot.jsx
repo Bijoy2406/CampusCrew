@@ -4,13 +4,15 @@
  */
 
 import React, { useState, useRef, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import './Chatbot.css';
-import { FaPaperPlane, FaTimes, FaRobot } from 'react-icons/fa';
+import { FaPaperPlane, FaTimes, FaRobot, FaTrash } from 'react-icons/fa';
 import botAvatar from '../../assets/img/chatbot.gif';
 import userAvatar from '../../assets/img/defaultavator.png';
 import { useAuth } from '../../contexts/AuthContext';
 
 const Chatbot = ({ onClose }) => {
+  const navigate = useNavigate();
   const STORAGE_KEY = 'campuscrew_chat_messages_v1';
   const { user } = useAuth?.() || {};
   const userAvatarSrc = (user && typeof user.profilePic === 'string' && user.profilePic.trim() !== '')
@@ -92,7 +94,7 @@ const Chatbot = ({ onClose }) => {
         content: msg.content
       }));
 
-      // Call backend API
+      // Call backend API with userId for conversation memory
       const response = await fetch(`${import.meta.env.VITE_BACKEND_LINK || 'http://localhost:8000'}/api/chat`, {
         method: 'POST',
         headers: {
@@ -100,18 +102,23 @@ const Chatbot = ({ onClose }) => {
         },
         body: JSON.stringify({
           message: userMessage,
-          conversationHistory
+          conversationHistory,
+          userId: user?.email || user?.id || 'anonymous-user'
         })
       });
 
       const data = await response.json();
 
       if (data.success) {
+        // Log which AI model was used
+        console.log(`🤖 AI Model Used: ${data.model || 'Unknown'}`);
+        
         // Add bot response to chat
         const botMessage = {
           role: 'assistant',
           content: data.response,
-          timestamp: new Date()
+          timestamp: new Date(),
+          model: data.model // Store model info
         };
         setMessages(prev => [...prev, botMessage]);
       } else {
@@ -140,6 +147,45 @@ const Chatbot = ({ onClose }) => {
     }
   };
 
+  const handleClearChat = async () => {
+    try {
+      // Clear conversation memory on backend
+      const userId = user?.email || user?.id || 'anonymous-user';
+      const response = await fetch(`${import.meta.env.VITE_BACKEND_LINK || 'http://localhost:8000'}/api/chat/conversation/${userId}`, {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+        }
+      });
+
+      if (response.ok) {
+        console.log('✅ Backend conversation memory cleared');
+      } else {
+        console.warn('⚠️ Failed to clear backend conversation memory');
+      }
+    } catch (error) {
+      console.warn('⚠️ Error clearing backend conversation memory:', error);
+    }
+
+    // Clear local chat messages and reset to default greeting
+    const defaultMessage = {
+      role: 'assistant',
+      content: 'Hello! I\'m the CampusCrew assistant. How can I help you today?',
+      timestamp: new Date().toISOString()
+    };
+    
+    setMessages([defaultMessage]);
+    
+    // Clear from sessionStorage
+    try {
+      sessionStorage.removeItem(STORAGE_KEY);
+    } catch (e) {
+      // Storage may be unavailable; fail silently
+    }
+
+    console.log('🧹 Chat cleared successfully');
+  };
+
   const formatTime = (date) => {
     return new Date(date).toLocaleTimeString('en-US', {
       hour: '2-digit',
@@ -161,11 +207,13 @@ const Chatbot = ({ onClose }) => {
       .replaceAll('"', '&quot;')
       .replaceAll("'", '&#39;');
 
-    // Convert [text](url) to anchor
-    s = s.replace(/\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer">$1</a>');
+  // Convert [text](url) to anchor (absolute http/https)
+  s = s.replace(/\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g, '<a href="$2" class="chat-link">$1</a>');
+  // Convert [text](/path) to anchor (relative path)
+  s = s.replace(/\[([^\]]+)\]\((\/[^[\s)]*)\)/g, '<a href="$2" class="chat-link">$1</a>');
 
-    // Convert raw URLs to anchor (avoid double-linking inside existing anchors)
-    s = s.replace(/(^|[\s(])((https?:\/\/[^\s)]+))/g, '$1<a href="$2" target="_blank" rel="noopener noreferrer">$2</a>');
+  // Convert raw URLs to anchor (avoid double-linking inside existing anchors)
+  s = s.replace(/(^|[\s(])((https?:\/\/[^\s)]+))/g, '$1<a href="$2" class="chat-link">$2</a>');
 
     // Bold: **text**
     s = s.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
@@ -179,6 +227,30 @@ const Chatbot = ({ onClose }) => {
     return s;
   };
 
+  const handleMessageClick = (e) => {
+    const anchor = e.target.closest('a');
+    if (!anchor) return;
+    const href = anchor.getAttribute('href');
+    if (!href) return;
+    e.preventDefault();
+    try {
+      if (href.startsWith('/')) {
+        navigate(href);
+        return;
+      }
+      const url = new URL(href, window.location.origin);
+      if (url.origin === window.location.origin) {
+        navigate(url.pathname + url.search + url.hash);
+      } else {
+        // External link: open in same tab per request
+        window.location.href = href;
+      }
+    } catch (_err) {
+      // Fallback to default navigation
+      window.location.href = href;
+    }
+  };
+
   return (
     <div className="chatbot-container">
       <div className="chatbot-header">
@@ -189,12 +261,22 @@ const Chatbot = ({ onClose }) => {
             <p>Ask me anything about CampusCrew</p>
           </div>
         </div>
-        <button className="chatbot-close-btn" onClick={onClose} aria-label="Close chat">
-          <FaTimes />
-        </button>
+        <div className="chatbot-header-buttons">
+          <button 
+            className="chatbot-clear-btn" 
+            onClick={handleClearChat} 
+            aria-label="New chat"
+            title="New chat"
+          >
+            <FaTrash />
+          </button>
+          <button className="chatbot-close-btn" onClick={onClose} aria-label="Close chat">
+            <FaTimes />
+          </button>
+        </div>
       </div>
 
-      <div className="chatbot-messages">
+  <div className="chatbot-messages" onClick={handleMessageClick}>
         {messages.map((message, index) => (
           <div
             key={index}
@@ -210,13 +292,15 @@ const Chatbot = ({ onClose }) => {
                   height={32}
                 />
               )}
-              <div
-                className="message-content"
-                {...(message.role === 'assistant'
-                  ? { dangerouslySetInnerHTML: { __html: renderMarkdown(message.content) } }
-                  : {})}
-              >
-                {message.role !== 'assistant' ? message.content : null}
+              <div className="message-content">
+                {message.role === 'assistant' ? (
+                  <>
+                    <div dangerouslySetInnerHTML={{ __html: renderMarkdown(message.content) }} />
+            
+                  </>
+                ) : (
+                  message.content
+                )}
               </div>
               {message.role === 'user' && (
                 <img
