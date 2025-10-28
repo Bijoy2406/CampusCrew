@@ -869,56 +869,45 @@ router.get('/chat/rag-status', async (req, res) => {
 
 /**
  * POST /chat/refresh-pages
- * Manually trigger page scraping for new content
- */
-router.post('/chat/refresh-pages', async (req, res) => {
-  try {
-    console.log('🔄 Manual page refresh requested...');
-    const refreshedStatus = await autoRAG.refreshPages();
-    
-    res.json({
-      success: true,
-      message: 'Pages refreshed successfully',
-      rag: {
-        totalChunks: refreshedStatus.totalChunks,
-        staticChunks: refreshedStatus.staticChunks,
-        liveChunks: refreshedStatus.liveChunks,
-        scrapedPages: refreshedStatus.scrapedPages,
-        lastScrapeTime: refreshedStatus.lastScrapeTime
-      },
-      timestamp: new Date().toISOString()
-    });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      error: error.message
-    });
-  }
-});
-
-/**
- * POST /chat/refresh-pages
- * Manually trigger auto-scraping of localhost pages
+ * Manually trigger page scraping and auto-scraping of localhost pages
  */
 router.post('/chat/refresh-pages', async (req, res) => {
   try {
     console.log('🔄 Manual page refresh triggered via API');
     
-    await ragSystem.manualRefresh();
-    const status = ragSystem.getStatus();
-    
-    res.json({
-      success: true,
-      message: 'Page refresh completed',
-      rag: {
-        totalChunks: status.totalChunks,
-        staticChunks: status.staticChunks,
-        liveChunks: status.liveChunks,
-        scrapedPages: status.scrapedPages,
-        lastScrapeTime: status.lastScrapeTime ? new Date(status.lastScrapeTime).toISOString() : null
-      },
-      timestamp: new Date().toISOString()
-    });
+    // Try auto RAG first, then fall back to manual refresh
+    try {
+      const refreshedStatus = await autoRAG.refreshPages();
+      return res.json({
+        success: true,
+        message: 'Pages refreshed successfully (autoRAG)',
+        rag: {
+          totalChunks: refreshedStatus.totalChunks,
+          staticChunks: refreshedStatus.staticChunks,
+          liveChunks: refreshedStatus.liveChunks,
+          scrapedPages: refreshedStatus.scrapedPages,
+          lastScrapeTime: refreshedStatus.lastScrapeTime
+        },
+        timestamp: new Date().toISOString()
+      });
+    } catch (autoError) {
+      console.log('AutoRAG failed, trying manual refresh:', autoError.message);
+      await ragSystem.manualRefresh();
+      const status = ragSystem.getStatus();
+      
+      return res.json({
+        success: true,
+        message: 'Page refresh completed (manual)',
+        rag: {
+          totalChunks: status.totalChunks,
+          staticChunks: status.staticChunks,
+          liveChunks: status.liveChunks,
+          scrapedPages: status.scrapedPages,
+          lastScrapeTime: status.lastScrapeTime ? new Date(status.lastScrapeTime).toISOString() : null
+        },
+        timestamp: new Date().toISOString()
+      });
+    }
   } catch (error) {
     res.status(500).json({
       success: false,
