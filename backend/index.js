@@ -83,18 +83,34 @@ app.get('/api/health', (req, res) => {
     })
 })
 
-// OPTIONS handler for all API routes
-app.options('*', cors())
+// OPTIONS handler for all API routes - handle preflight requests
+// Note: Commented out due to path-to-regexp issue with '*' wildcard
+// The CORS middleware above already handles OPTIONS requests
+// app.options('*', cors())
 
+// Mount routers BEFORE app.listen
+app.use('/api', UserRouter)
+app.use('/api', EventRouter)
+app.use('/api', RegistrationRouter)
+app.use('/api', RecommendetionRouter)
+app.use('/api', ChatRouter)
 
+console.log('✅ All routers mounted successfully');
 
 app.listen(port, async () => {
     console.log(`Backend is running on port ${port}`)
+    console.log(`Environment: ${process.env.NODE_ENV || 'development'}`)
+    
     // Start the automatic event cleanup service
-    startAutomaticCleanup();
+    try {
+        startAutomaticCleanup();
+    } catch (error) {
+        console.error('⚠️  Event cleanup failed:', error.message);
+    }
     
     // Initialize chatbot knowledge base (optional)
-    if (process.env.ENABLE_EMBEDDINGS !== 'false') {
+    // Skip in serverless to avoid timeout
+    if (process.env.ENABLE_EMBEDDINGS !== 'false' && process.env.NODE_ENV !== 'production') {
         console.log('\n🤖 Initializing Chatbot Knowledge Base...');
         try {
             await embeddingService.loadKnowledgeBase();
@@ -104,20 +120,14 @@ app.listen(port, async () => {
             console.log('Chatbot will work with limited functionality\n');
         }
     } else {
-        console.log('\n⚠️  Skipping embedding initialization (ENABLE_EMBEDDINGS=false).');
-        console.log('   The chatbot will use keyword-based context only.\n');
+        console.log('\n⚠️  Skipping embedding initialization (production mode).');
+        console.log('   The chatbot will initialize on first request.\n');
     }
     
-    // Auto-update Qdrant with fresh data (checks for old/duplicate data)
-    // Runs in background without blocking server startup
-    autoUpdateVectorDB().catch(error => {
-        console.error('⚠️  Vector database auto-update failed:', error.message);
-    });
+    // Auto-update Qdrant - skip in serverless to avoid timeout
+    if (process.env.NODE_ENV !== 'production') {
+        autoUpdateVectorDB().catch(error => {
+            console.error('⚠️  Vector database auto-update failed:', error.message);
+        });
+    }
 })
-
-
-app.use('/api', UserRouter)
-app.use('/api', EventRouter)
-app.use('/api', RegistrationRouter)
-app.use('/api', RecommendetionRouter)
-app.use('/api', ChatRouter)
