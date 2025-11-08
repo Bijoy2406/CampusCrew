@@ -25,7 +25,10 @@ app.use(express.json())
 MongDB();
 
 // Always allow these origins for CORS
+// Always allow these origins for CORS
 const allowedOrigins = [
+    'https://campuscrew.app',        
+    'https://www.campuscrew.app',    
     'https://campuscrew.vercel.app',
     'https://campus-crew.vercel.app',
     'https://talk-threads-seven.vercel.app',
